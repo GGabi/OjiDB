@@ -16,6 +16,8 @@ fn main() {
 	let mut g = Web::new();
 
 	g.add(&Triple::from(("Gabe", "likes", "Rust")));
+	g.add(&Triple::from(("Rust", "is", "fast")));
+	g.add(&Triple::from(("fast", "is", "good")));
 	g.add(&Triple::from(("Gabe", "likes", "Scala")));
 	g.add(&Triple::from(("Gabe", "likes", "Java")));
 	g.add(&Triple::from(("Gabe", "likes", "Python")));
@@ -27,5 +29,16 @@ fn main() {
 	g.add(&Triple::from(("Matt", "likes", "Node")));
 	g.erase(&Triple::from(("Gabe", "likes", "Scala")));
 
-	println!("{:#?}", g);
+	let v = g.get_chain_2(&[
+								Some(String::from("Gabe")),
+								Some(String::from("likes")),
+								Some(String::from("Rust")),
+								Some(String::from("is")),
+								Some(String::from("fast")),
+								Some(String::from("is")),
+								Some(String::from("good"))
+							 ]);
+
+	// println!("{:#?}", g);
+	println!("{:#?}", v);
 }

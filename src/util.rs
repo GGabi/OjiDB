@@ -275,6 +275,12 @@ impl TripleStore {
 	}
 }
 
+//I am Gabe, Gabe likes Rust
+//I --> am --> Gabe --> likes --> Rust
+//[a, b, ..., y, z]
+//get(a, b, c)
+//c, d, e
+
 /*
 A data-structure that sacrifices space for fast data access
 via storing 3 versions of the same "Triple data" in
@@ -285,6 +291,64 @@ pub struct Web {
 	spo: TripleStore,
 	pos: TripleStore,
 	osp: TripleStore,
+}
+impl Web {
+	//Odd length queries greater than 3
+	pub fn get_chain_naive(&self, query: &[Option<String>]) -> Vec<Vec<String>> {
+		let mut ret_v: Vec<Vec<String>> = Vec::new();
+		ret_v.push(Vec::new());
+		let mut i: usize = 2;
+		while i < query.len() {
+			let Triple(s, p, o) =
+				self.get(
+					&(query[i-2].clone(),
+					  query[i-1].clone(),
+					  query[i].clone())
+				)[0].clone();
+			if i == 2 { ret_v[0].push(s); }
+			ret_v[0].push(p);
+			ret_v[0].push(o);
+			println!("{:?}", ret_v);
+			i += 2
+		}
+		if ret_v[0].len() == query.len() {
+			return ret_v
+		}
+		return Vec::new()
+	}
+	//All length queries greater than 3
+	pub fn get_chain_2(&self, query: &[Option<String>]) -> Vec<Vec<String>> {
+		//Initialise all data
+		let mut ret_v: Vec<Vec<String>> = Vec::new();
+		ret_v.push(Vec::new());
+		let mut i: usize = 0;
+		let end: usize = query.len()-2;
+		//If the query length is even, then the final item must be a Predicate
+		if query.len() % 2 == 0 {
+			
+		}
+		else {
+			while i < end {
+				let Triple(s, p, o) =
+					self.get(
+						&(query[i].clone(),
+						  query[i+1].clone(),
+						  query[i+2].clone())
+					)[0].clone();
+				if i == 0 { ret_v[0].push(s); }
+				ret_v[0].push(p);
+				ret_v[0].push(o);
+				i += 2
+			}
+		}
+
+		println!("{:?}", ret_v);
+		//Return if got it all
+		if ret_v[0].len() == query.len() {
+			return ret_v
+		}
+		return Vec::new()
+	}
 }
 impl Web {
 	pub fn new() -> Self {
@@ -375,3 +439,17 @@ impl Web {
 		self.add(&new_t);
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
