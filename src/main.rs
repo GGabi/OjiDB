@@ -22,7 +22,7 @@ fn main() {
   g.add(&Triple::from(("Java", "is", "old")));
   g.add(&Triple::from(("C++", "is", "fast")));
   g.add(&Triple::from(("C++", "is", "hard")));
-  g.add(&Triple::from(("fast", "is", "good")));
+  g.add(&Triple::from(("fast", "has", "good")));
   g.add(&Triple::from(("slow", "is", "bad")));
   g.add(&Triple::from(("Gabe", "likes", "Scala")));
   g.add(&Triple::from(("Gabe", "likes", "Java")));
@@ -35,14 +35,13 @@ fn main() {
   g.add(&Triple::from(("Matt", "likes", "Node")));
   g.erase(&Triple::from(("Gabe", "likes", "Scala")));
 
-  let v = g.get_chain(&[
+  let v = g.get(&[
                 Some(String::from("Gabe")),
+                Some(String::from("likes")),
                 None,
                 None,
                 None,
-                None,
-                None,
-                None
+                Some(String::from("is")),
                ]);
 
   // println!("{:#?}", g);

@@ -156,7 +156,7 @@ impl TripleStore {
       }
     }
   }
-  fn get(&self, qt: &QueryTriple) -> Vec<Triple> {
+  fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
     let mut v: Vec<Triple> = Vec::new();
     match qt {
       (Some(h), Some(m), Some(t)) => {
@@ -305,17 +305,17 @@ impl Web {
     self.pos.erase(&Triple(p.to_string(), o.to_string(), s.to_string()));
     self.osp.erase(&Triple(o.to_string(), s.to_string(), p.to_string()));
   }
-  pub fn get(&self, qt: &QueryTriple) -> Vec<Triple> {
+  pub fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
     match qt {
       (Some(s), Some(p), Some(o)) => {
-        self.spo.get(&(
+        self.spo.get_triple(&(
           Some(s.to_string()),
           Some(p.to_string()),
           Some(o.to_string())
           ))
       },
       (Some(s), Some(p), None) => {
-        self.spo.get(&(
+        self.spo.get_triple(&(
           Some(s.to_string()),
           Some(p.to_string()),
           None
@@ -338,7 +338,7 @@ impl Web {
           TOrdering::POS)
       },
       (Some(s), None, None) => {
-        self.spo.get(&(
+        self.spo.get_triple(&(
           Some(s.to_string()),
           None,
           None
@@ -361,7 +361,7 @@ impl Web {
           TOrdering::OSP)
       },
       (None, None, None) => {
-        self.spo.get(&(
+        self.spo.get_triple(&(
           None,
           None,
           None
@@ -378,7 +378,11 @@ impl Web {
 //WIP
 impl Web {
   //Odd length chains with Nones in them
-  pub fn get_chain(&self, query: &[Option<String>]) -> Vec<Vec<String>> {
+  pub fn get(&self, q: &[Option<String>]) -> Vec<Vec<String>> {
+
+    let mut q_vec = q.to_vec();
+    if q_vec.len() % 2 == 0 { q_vec.push(None); }
+    let query: &[Option<String>] = &q_vec;
 
     //Gather query triples from chain
     let mut q_triples: Vec<QueryTriple> = Vec::new();
@@ -395,7 +399,7 @@ impl Web {
     let mut q_cursor: usize = 0; //Keeps track of which query triple we're looking at
     let mut r_cursor: usize = 0; //Keeps track of which vec in ret_v
     //Populates the return vec with the results of the first query triple
-    let ts = self.get(&q_triples[q_cursor]);
+    let ts = self.get_triple(&q_triples[q_cursor]);
     for t in ts {
       ret_v.push(t.as_slice().to_vec());
     }
@@ -409,7 +413,7 @@ impl Web {
       while r_cursor < ret_v_len {
         //Query using the final value from the existing list in ret_vals
         //  as the Subject, store all the return triples in ts.
-        let ts = self.get(&(
+        let ts = self.get_triple(&(
           Some(ret_v[r_cursor][ret_v[r_cursor].len()-1].clone()),
           q_triples[q_cursor].1.clone(),
           q_triples[q_cursor].2.clone()
@@ -434,14 +438,34 @@ impl Web {
       }
       //All ones of incorrect length were not a match in the last iteraton,
       //  so remove them.
+      println!("{:?}", ret_v);
       ret_v = ret_v.into_iter().filter(|x| x.len() == ((q_cursor+1)*2)+1).collect();
       q_cursor += 1;
     }
     println!("{:?}", ret_v);
-    let ret_v = ret_v.into_iter().filter(|x| x.len() == query.len()).collect();
     ret_v
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
