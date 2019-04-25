@@ -19,9 +19,9 @@ OjiD, pronounced "Oh-Jee-Dee", is (or will be) a Graph Database implemented in R
  - **Tristore**: A fully implemented, and *slightly modified*, Hexastore architecture to provide lightning-fast data retrieval and a foundation for flexible queries.
  - **POINTERS**: All "branches" in the database are linked via pointers rather than existing within one object, meaning modification of one part of the data will never cause more than the local branch to be re-allocated.
  - **Bulk Re-allocation**: Branches will explicitly bulk allocate-deallocate when needed in order to minimise the frequency of large amounts of data being moved around.
+ - **Query Chains**: Support for queries of arbitrary length.
 
 ### What we don't have: (yet)
- - **Query Chains**: Support for queries of arbitrary length.
  - **O(1) Lookup**: Store everything in HashMaps and HashSets rather than Vecs, without affecting the custom re-allocation.
  - **Documents!**: A persistence model using Amazon ION. 
    - Using C and Rust's FFI.
