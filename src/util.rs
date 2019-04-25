@@ -1,7 +1,3 @@
-
-// OjiD
-// A web that wards off, rather than causing, data related nightmares
-
 /*
 Trait to be implemented on Vec<T>.
 Forces re-allocation if and only if the
@@ -88,6 +84,9 @@ impl Triple {
         self.clone()
       },
     }
+  }
+  fn as_slice(&self) -> [String; 3] {
+    [self.0.clone(), self.1.clone(), self.2.clone()]
   }
 }
 
@@ -275,12 +274,6 @@ impl TripleStore {
   }
 }
 
-//I am Gabe, Gabe likes Rust
-//I --> am --> Gabe --> likes --> Rust
-//[a, b, ..., y, z]
-//get(a, b, c)
-//c, d, e
-
 /*
 A data-structure that sacrifices space for fast data access
 via storing 3 versions of the same "Triple data" in
@@ -291,64 +284,6 @@ pub struct Web {
   spo: TripleStore,
   pos: TripleStore,
   osp: TripleStore,
-}
-impl Web {
-  //Odd length queries greater than 3
-  pub fn get_chain_naive(&self, query: &[Option<String>]) -> Vec<Vec<String>> {
-    let mut ret_v: Vec<Vec<String>> = Vec::new();
-    ret_v.push(Vec::new());
-    let mut i: usize = 2;
-    while i < query.len() {
-      let Triple(s, p, o) =
-        self.get(
-          &(query[i-2].clone(),
-            query[i-1].clone(),
-            query[i].clone())
-        )[0].clone();
-      if i == 2 { ret_v[0].push(s); }
-      ret_v[0].push(p);
-      ret_v[0].push(o);
-      println!("{:?}", ret_v);
-      i += 2
-    }
-    if ret_v[0].len() == query.len() {
-      return ret_v
-    }
-    return Vec::new()
-  }
-  //All length queries greater than 3
-  pub fn get_chain_2(&self, query: &[Option<String>]) -> Vec<Vec<String>> {
-    //Initialise all data
-    let mut ret_v: Vec<Vec<String>> = Vec::new();
-    ret_v.push(Vec::new());
-    let mut i: usize = 0;
-    let end: usize = query.len()-2;
-    //If the query length is even, then the final item must be a Predicate
-    if query.len() % 2 == 0 {
-      
-    }
-    else {
-      while i < end {
-        let Triple(s, p, o) =
-          self.get(
-            &(query[i].clone(),
-              query[i+1].clone(),
-              query[i+2].clone())
-          )[0].clone();
-        if i == 0 { ret_v[0].push(s); }
-        ret_v[0].push(p);
-        ret_v[0].push(o);
-        i += 2
-      }
-    }
-
-    println!("{:?}", ret_v);
-    //Return if got it all
-    if ret_v[0].len() == query.len() {
-      return ret_v
-    }
-    return Vec::new()
-  }
 }
 impl Web {
   pub fn new() -> Self {
@@ -440,6 +375,73 @@ impl Web {
   }
 }
 
+//WIP
+impl Web {
+  //Odd length chains with Nones in them
+  pub fn get_chain(&self, query: &[Option<String>]) -> Vec<Vec<String>> {
+
+    //Gather query triples from chain
+    let mut q_triples: Vec<QueryTriple> = Vec::new();
+    for i in (0..query.len()-2).step_by(2) {
+      q_triples.push(
+        (query[i].clone(), query[i+1].clone(), query[i+2].clone())
+      );
+    }
+
+    //Initialise return list
+    let mut ret_v: Vec<Vec<String>> = Vec::new();
+
+    //Start processing
+    let mut q_cursor: usize = 0; //Keeps track of which query triple we're looking at
+    let mut r_cursor: usize = 0; //Keeps track of which vec in ret_v
+    //Populates the return vec with the results of the first query triple
+    let ts = self.get(&q_triples[q_cursor]);
+    for t in ts {
+      ret_v.push(t.as_slice().to_vec());
+    }
+    //Sets the start point as the second query triple in the chain
+    //  and evaluates the return values until all queries used up
+    q_cursor = 1;
+    while q_cursor < q_triples.len() {
+      //Sets the r_cursor back to the beginning of ret_vals
+      r_cursor = 0;
+      let mut ret_v_len: usize = ret_v.len();
+      while r_cursor < ret_v_len {
+        //Query using the final value from the existing list in ret_vals
+        //  as the Subject, store all the return triples in ts.
+        let ts = self.get(&(
+          Some(ret_v[r_cursor][ret_v[r_cursor].len()-1].clone()),
+          q_triples[q_cursor].1.clone(),
+          q_triples[q_cursor].2.clone()
+        ));
+        let ts_len: usize = ts.len();
+        let old_t = ret_v[r_cursor].clone(); //Store the unaffected triple for potential cloning
+        //Extend the return values if needed as a result of the query.
+        //  Clone the base, then extend, for multiple query results.
+        if ts_len > 0 {
+          ret_v[r_cursor].push(ts[0].1.clone());
+          ret_v[r_cursor].push(ts[0].2.clone());
+        }
+        if ts_len > 1 {
+          for t_cursor in 1..ts_len {
+            ret_v.push(old_t.clone());
+            ret_v_len += 1;
+            ret_v[ret_v_len-1].push(ts[t_cursor].1.clone());
+            ret_v[ret_v_len-1].push(ts[t_cursor].2.clone());
+          }
+        }
+        r_cursor += 1;
+      }
+      //All ones of incorrect length were not a match in the last iteraton,
+      //  so remove them.
+      ret_v = ret_v.into_iter().filter(|x| x.len() == ((q_cursor+1)*2)+1).collect();
+      q_cursor += 1;
+    }
+    println!("{:?}", ret_v);
+    let ret_v = ret_v.into_iter().filter(|x| x.len() == query.len()).collect();
+    ret_v
+  }
+}
 
 
 

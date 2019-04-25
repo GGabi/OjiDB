@@ -17,7 +17,13 @@ fn main() {
 
   g.add(&Triple::from(("Gabe", "likes", "Rust")));
   g.add(&Triple::from(("Rust", "is", "fast")));
+  g.add(&Triple::from(("Java", "is", "slow")));
+  g.add(&Triple::from(("Java", "is", "bad")));
+  g.add(&Triple::from(("Java", "is", "old")));
+  g.add(&Triple::from(("C++", "is", "fast")));
+  g.add(&Triple::from(("C++", "is", "hard")));
   g.add(&Triple::from(("fast", "is", "good")));
+  g.add(&Triple::from(("slow", "is", "bad")));
   g.add(&Triple::from(("Gabe", "likes", "Scala")));
   g.add(&Triple::from(("Gabe", "likes", "Java")));
   g.add(&Triple::from(("Gabe", "likes", "Python")));
@@ -29,14 +35,14 @@ fn main() {
   g.add(&Triple::from(("Matt", "likes", "Node")));
   g.erase(&Triple::from(("Gabe", "likes", "Scala")));
 
-  let v = g.get_chain_2(&[
+  let v = g.get_chain(&[
                 Some(String::from("Gabe")),
-                Some(String::from("likes")),
-                Some(String::from("Rust")),
-                Some(String::from("is")),
-                Some(String::from("fast")),
-                Some(String::from("is")),
-                Some(String::from("good"))
+                None,
+                None,
+                None,
+                None,
+                None,
+                None
                ]);
 
   // println!("{:#?}", g);
