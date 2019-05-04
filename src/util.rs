@@ -5,24 +5,24 @@ length changes by a factor of 2, within
 a specified range.
 */
 trait BinaryResize {
-  const max: usize;
-  const min: usize;
+  const MAX: usize;
+  const MIN: usize;
   fn try_grow(&mut self);
   fn try_shrink(&mut self);
   fn grow(&mut self);
   fn shrink(&mut self);
 }
 impl<T> BinaryResize for Vec<T> {
-  const max: usize = 64;
-  const min: usize = 8;
+  const MAX: usize = 64;
+  const MIN: usize = 8;
   fn try_grow(&mut self) {
-    if self.capacity() < Self::max
+    if self.capacity() < Self::MAX
     && self.len() == self.capacity() {
       self.grow();
     }
   }
   fn try_shrink(&mut self) {
-    if self.capacity() > Self::min
+    if self.capacity() > Self::MIN
     && self.len() <= self.capacity()/2 {
       self.shrink();
     }
@@ -104,7 +104,7 @@ impl TripleStore {
         mids.try_grow();
         let mut v = Vec::with_capacity(8);
         v.push(t);
-        let mut tail = Box::new(v);
+        let tail = Box::new(v);
         mids.push((m, tail));
       }
     }
@@ -113,10 +113,10 @@ impl TripleStore {
       heads.try_grow();
       let mut v = Vec::with_capacity(8);
       v.push(t);
-      let mut tail = Box::new(v);
+      let tail = Box::new(v);
       let mut v = Vec::with_capacity(8);
       v.push((m, tail));
-      let mut mid = Box::new(v);
+      let mid = Box::new(v);
       heads.push((h, mid));
     }
   }
@@ -254,101 +254,100 @@ A data-structure that sacrifices space for fast data access
 via storing 3 versions of the same "Triple data" in
 unique orderings inspired by Hexastore.
 */
-// #[derive(Clone, Debug)]
-// pub struct Web {
-//   spo: TripleStore,
-//   pos: TripleStore,
-//   osp: TripleStore,
-// }
-// impl Web {
-//   pub fn new() -> Self {
-//     Web {
-//       spo: TripleStore::new(),
-//       pos: TripleStore::new(),
-//       osp: TripleStore::new()
-//     }
-//   }
-//   pub fn add(&mut self, t: &Triple) {
-//     let Triple(s, p, o) = t;
-//     self.spo.add(&Triple(s.to_string(), p.to_string(), o.to_string()));
-//     self.pos.add(&Triple(p.to_string(), o.to_string(), s.to_string()));
-//     self.osp.add(&Triple(o.to_string(), s.to_string(), p.to_string()));
-//   }
-//   pub fn erase(&mut self, t: &Triple) {
-//     let Triple(s, p, o) = t;
-//     self.spo.erase(&Triple(s.to_string(), p.to_string(), o.to_string()));
-//     self.pos.erase(&Triple(p.to_string(), o.to_string(), s.to_string()));
-//     self.osp.erase(&Triple(o.to_string(), s.to_string(), p.to_string()));
-//   }
-//   pub fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
-//     match qt {
-//       (Some(s), Some(p), Some(o)) => {
-//         self.spo.get_triple(&(
-//           Some(s.to_string()),
-//           Some(p.to_string()),
-//           Some(o.to_string())
-//           ))
-//       },
-//       (Some(s), Some(p), None) => {
-//         self.spo.get_triple(&(
-//           Some(s.to_string()),
-//           Some(p.to_string()),
-//           None
-//           ))
-//       },
-//       (Some(s), None, Some(o)) => {
-//         self.osp.get_ordered(&(
-//           Some(o.to_string()),
-//           Some(s.to_string()),
-//           None
-//           ),
-//           TOrdering::OSP)
-//       },
-//       (None, Some(p), Some(o)) => {
-//         self.pos.get_ordered(&(
-//           Some(p.to_string()),
-//           Some(o.to_string()),
-//           None
-//           ),
-//           TOrdering::POS)
-//       },
-//       (Some(s), None, None) => {
-//         self.spo.get_triple(&(
-//           Some(s.to_string()),
-//           None,
-//           None
-//           ))
-//       },
-//       (None, Some(p), None) => {
-//         self.pos.get_ordered(&(
-//           Some(p.to_string()),
-//           None,
-//           None
-//           ),
-//           TOrdering::POS)
-//       },
-//       (None, None, Some(o)) => {
-//         self.osp.get_ordered(&(
-//           Some(o.to_string()),
-//           None,
-//           None
-//           ),
-//           TOrdering::OSP)
-//       },
-//       (None, None, None) => {
-//         self.spo.get_triple(&(
-//           None,
-//           None,
-//           None
-//           ))
-//       },
-//     }
-//   }
-//   pub fn replace(&mut self, old_t: Triple, new_t: Triple) {
-//     self.erase(&old_t);
-//     self.add(&new_t);
-//   }
-// }
+#[derive(Clone, Debug)]
+pub struct Web {
+  spo: TripleStore,
+  pos: TripleStore,
+  osp: TripleStore,
+}
+impl Web {
+  pub fn new() -> Self {
+    Web {
+      spo: TripleStore::new(),
+      pos: TripleStore::new(),
+      osp: TripleStore::new()
+    }
+  }
+  pub fn add(&mut self, (s, p, o): Triple) {
+    //Add should eventually consume the input
+    self.spo.add((s.to_string(), p.to_string(), o.to_string()));
+    self.pos.add((p.to_string(), o.to_string(), s.to_string()));
+    self.osp.add((o, s, p));
+  }
+  pub fn erase(&mut self, (s, p, o): &Triple) {
+    self.spo.erase(&(s.to_string(), p.to_string(), o.to_string()));
+    self.pos.erase(&(p.to_string(), o.to_string(), s.to_string()));
+    self.osp.erase(&(o.to_string(), s.to_string(), p.to_string()));
+  }
+  pub fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
+    match qt {
+      (Some(s), Some(p), Some(o)) => {
+        self.spo.get_triple(&(
+          Some(s.to_string()),
+          Some(p.to_string()),
+          Some(o.to_string())
+          ))
+      },
+      (Some(s), Some(p), None) => {
+        self.spo.get_triple(&(
+          Some(s.to_string()),
+          Some(p.to_string()),
+          None
+          ))
+      },
+      (Some(s), None, Some(o)) => {
+        self.osp.get_ordered(&(
+          Some(o.to_string()),
+          Some(s.to_string()),
+          None
+          ),
+          &TOrdering::OSP)
+      },
+      (None, Some(p), Some(o)) => {
+        self.pos.get_ordered(&(
+          Some(p.to_string()),
+          Some(o.to_string()),
+          None
+          ),
+          &TOrdering::POS)
+      },
+      (Some(s), None, None) => {
+        self.spo.get_triple(&(
+          Some(s.to_string()),
+          None,
+          None
+          ))
+      },
+      (None, Some(p), None) => {
+        self.pos.get_ordered(&(
+          Some(p.to_string()),
+          None,
+          None
+          ),
+          &TOrdering::POS)
+      },
+      (None, None, Some(o)) => {
+        self.osp.get_ordered(&(
+          Some(o.to_string()),
+          None,
+          None
+          ),
+          &TOrdering::OSP)
+      },
+      (None, None, None) => {
+        self.spo.get_triple(&(
+          None,
+          None,
+          None
+          ))
+      },
+    }
+  }
+  pub fn replace(&mut self, old_t: &Triple, new_t: Triple) {
+    self.erase(&old_t);
+    self.add(new_t);
+  }
+}
 
 // //WIP
 // impl Web {
