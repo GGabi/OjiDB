@@ -1,9 +1,9 @@
 mod lib;
 
-use crate::lib::Web;
+use crate::lib::Graph;
 
 fn main() {
-  let mut g = Web::new();
+  let mut g = Graph::new();
 
   g.add(("Gabe".into(), "likes".into(), "Rust".into()));
   g.add(("Gabe".into(), "likes".into(), "C++".into()));
@@ -23,8 +23,8 @@ fn main() {
   let v = g.get(&[None,
                   Some("likes".into()),
                   None,
-                  Some("likes".into()),
-                  None
+                  None,
+                  None,
                 ]);
 
   println!("{:#?}", g);
