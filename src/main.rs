@@ -1,49 +1,29 @@
+mod lib;
 
-// OjiD
-// A web that wards off, rather than causing, data related nightmares
-
-mod util;
-
-// use crate::util::{Web, Triple, QueryTriple};
-
-//I am Gabe, Gabe likes Rust
-//I --> am --> Gabe --> likes --> Rust
-//[a, b, ..., y, z]
-//get(a, b, c)
-//c, d, e
+use crate::lib::Web;
 
 fn main() {
-  // let mut g = Web::new();
+  let mut g = Web::new();
 
-  // g.add(&Triple::from(("Gabe", "likes", "Rust")));
-  // g.add(&Triple::from(("Rust", "is", "fast")));
-  // g.add(&Triple::from(("Java", "is", "slow")));
-  // g.add(&Triple::from(("Java", "is", "bad")));
-  // g.add(&Triple::from(("Java", "is", "old")));
-  // g.add(&Triple::from(("C++", "is", "fast")));
-  // g.add(&Triple::from(("C++", "is", "hard")));
-  // g.add(&Triple::from(("fast", "has", "good")));
-  // g.add(&Triple::from(("slow", "is", "bad")));
-  // g.add(&Triple::from(("Gabe", "likes", "Scala")));
-  // g.add(&Triple::from(("Gabe", "likes", "Java")));
-  // g.add(&Triple::from(("Gabe", "likes", "Python")));
-  // g.add(&Triple::from(("Gabe", "likes", "C")));
-  // g.add(&Triple::from(("Gabe", "likes", "C++")));
-  // g.add(&Triple::from(("Gabe", "likes", "JS")));
-  // g.add(&Triple::from(("Gabe", "is", "short")));
-  // g.add(&Triple::from(("Gabe", "hates", "PHP")));
-  // g.add(&Triple::from(("Matt", "likes", "Node")));
-  // g.erase(&Triple::from(("Gabe", "likes", "Scala")));
+  g.add(("Gabe".into(), "likes".into(), "Rust".into()));
+  g.add(("Gabe".into(), "likes".into(), "C++".into()));
+  g.add(("Gabe".into(), "likes".into(), "Scala".into()));
+  g.add(("Gabe".into(), "likes".into(), "Python".into()));
+  g.add(("Gabe".into(), "likes".into(), "Kotlin".into()));
+  g.add(("Gabe".into(), "likes".into(), "Rust".into()));
+  g.add(("Gabe".into(), "hates".into(), "Java".into()));
+  g.add(("Gabe".into(), "hates".into(), "Pascal".into()));
+  g.add(("Gabe".into(), "hates".into(), "Perl5".into()));
+  g.add(("Matt".into(), "likes".into(), "JS".into()));
+  g.add(("James".into(), "likes".into(), "Java".into()));
+  g.add(("James".into(), "likes".into(), "C#".into()));
+  g.add(("James".into(), "likes".into(), "C++".into()));
 
-  // let v = g.get(&[
-  //               Some(String::from("Gabe")),
-  //               Some(String::from("likes")),
-  //               None,
-  //               None,
-  //               None,
-  //               Some(String::from("is")),
-  //              ]);
+  let v = g.get_triple(&(None,
+                         Some("likes".into()),
+                         None
+                      ));
 
-  // // println!("{:#?}", g);
-  // println!("{:#?}", v);
+  println!("{:#?}", g);
+  println!("{:#?}", v);
 }
