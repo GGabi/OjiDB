@@ -18,11 +18,14 @@ fn main() {
   g.add(("James".into(), "likes".into(), "Java".into()));
   g.add(("James".into(), "likes".into(), "C#".into()));
   g.add(("James".into(), "likes".into(), "C++".into()));
+  g.add(("Gabe".into(), "likes".into(), "James".into()));
 
-  let v = g.get_triple(&(None,
-                         Some("likes".into()),
-                         None
-                      ));
+  let v = g.get(&[None,
+                  Some("likes".into()),
+                  None,
+                  Some("likes".into()),
+                  None
+                ]);
 
   println!("{:#?}", g);
   println!("{:#?}", v);

@@ -70,10 +70,10 @@ Data types to reduce verbosity.
 All instances of None in Querys indicate required values.
 */
 pub type Triple = (String, String, String);
-type Double = (String, String);
 pub type QueryTriple = (Option<String>, Option<String>, Option<String>);
-type QueryDouble = (Option<String>, Option<String>);
 pub type QueryChain<'a>  = &'a[Option<String>];
+type Double = (String, String);
+type QueryDouble = (Option<String>, Option<String>);
 
 /*
 A data-structure that stores triples in, I hesitate to say,
@@ -349,77 +349,80 @@ impl Web {
   }
 }
 
-// //WIP
-// impl Web {
-//   //Odd length chains with Nones in them
-//   pub fn get(&self, q: &[Option<String>]) -> Vec<Vec<String>> {
+//WIP
+impl Web {
+  //Odd length chains with Nones in them
+  pub fn get(&self, q: &[Option<String>]) -> Vec<Vec<String>> {
 
-//     let mut q_vec = q.to_vec();
-//     if q_vec.len() % 2 == 0 { q_vec.push(None); }
-//     let query: &[Option<String>] = &q_vec;
+    let mut q_vec = q.to_vec();
+    if q_vec.len() % 2 == 0 { q_vec.push(None); }
+    let query: &[Option<String>] = &q_vec;
 
-//     //Gather query triples from chain
-//     let mut q_triples: Vec<QueryTriple> = Vec::new();
-//     for i in (0..query.len()-2).step_by(2) {
-//       q_triples.push(
-//         (query[i].clone(), query[i+1].clone(), query[i+2].clone())
-//       );
-//     }
+    //Gather query triples from chain
+    let mut q_triples: Vec<QueryTriple> = Vec::new();
+    for i in (0..query.len()-2).step_by(2) {
+      q_triples.push(
+        (query[i].clone(), query[i+1].clone(), query[i+2].clone())
+      );
+    }
 
-//     //Initialise return list
-//     let mut ret_v: Vec<Vec<String>> = Vec::new();
+    //Initialise return list
+    let mut ret_v: Vec<Vec<String>> = Vec::new();
 
-//     //Start processing
-//     let mut q_cursor: usize = 0; //Keeps track of which query triple we're looking at
-//     let mut r_cursor: usize = 0; //Keeps track of which vec in ret_v
-//     //Populates the return vec with the results of the first query triple
-//     let ts = self.get_triple(&q_triples[q_cursor]);
-//     for t in ts {
-//       ret_v.push(t.as_slice().to_vec());
-//     }
-//     //Sets the start point as the second query triple in the chain
-//     //  and evaluates the return values until all queries used up
-//     q_cursor = 1;
-//     while q_cursor < q_triples.len() {
-//       //Sets the r_cursor back to the beginning of ret_vals
-//       r_cursor = 0;
-//       let mut ret_v_len: usize = ret_v.len();
-//       while r_cursor < ret_v_len {
-//         //Query using the final value from the existing list in ret_vals
-//         //  as the Subject, store all the return triples in ts.
-//         let ts = self.get_triple(&(
-//           Some(ret_v[r_cursor][ret_v[r_cursor].len()-1].clone()),
-//           q_triples[q_cursor].1.clone(),
-//           q_triples[q_cursor].2.clone()
-//         ));
-//         let ts_len: usize = ts.len();
-//         let old_t = ret_v[r_cursor].clone(); //Store the unaffected triple for potential cloning
-//         //Extend the return values if needed as a result of the query.
-//         //  Clone the base, then extend, for multiple query results.
-//         if ts_len > 0 {
-//           ret_v[r_cursor].push(ts[0].1.clone());
-//           ret_v[r_cursor].push(ts[0].2.clone());
-//         }
-//         if ts_len > 1 {
-//           for t_cursor in 1..ts_len {
-//             ret_v.push(old_t.clone());
-//             ret_v_len += 1;
-//             ret_v[ret_v_len-1].push(ts[t_cursor].1.clone());
-//             ret_v[ret_v_len-1].push(ts[t_cursor].2.clone());
-//           }
-//         }
-//         r_cursor += 1;
-//       }
-//       //All ones of incorrect length were not a match in the last iteraton,
-//       //  so remove them.
-//       println!("{:?}", ret_v);
-//       ret_v = ret_v.into_iter().filter(|x| x.len() == ((q_cursor+1)*2)+1).collect();
-//       q_cursor += 1;
-//     }
-//     println!("{:?}", ret_v);
-//     ret_v
-//   }
-// }
+    //Start processing
+    let mut q_cursor: usize = 0; //Keeps track of which query triple we're looking at
+    let mut r_cursor: usize = 0; //Keeps track of which vec in ret_v
+    //Populates the return vec with the results of the first query triple
+    let ts = self.get_triple(&q_triples[q_cursor]);
+    for t in ts {
+      let mut v: Vec<String> = Vec::new();
+      v.push(t.0);
+      v.push(t.1);
+      v.push(t.2);
+      ret_v.push(v);
+    }
+    //Sets the start point as the second query triple in the chain
+    //  and evaluates the return values until all queries used up
+    q_cursor = 1;
+    while q_cursor < q_triples.len() {
+      //Sets the r_cursor back to the beginning of ret_vals
+      r_cursor = 0;
+      let mut ret_v_len: usize = ret_v.len();
+      while r_cursor < ret_v_len {
+        //Query using the final value from the existing list in ret_vals
+        //  as the Subject, store all the return triples in ts.
+        let ts = self.get_triple(&(
+          Some(ret_v[r_cursor][ret_v[r_cursor].len()-1].clone()),
+          q_triples[q_cursor].1.clone(),
+          q_triples[q_cursor].2.clone()
+        ));
+        let ts_len: usize = ts.len();
+        let old_t = ret_v[r_cursor].clone(); //Store the unaffected triple for potential cloning
+        //Extend the return values if needed as a result of the query.
+        //  Clone the base, then extend, for multiple query results.
+        if ts_len > 0 {
+          ret_v[r_cursor].push(ts[0].1.clone());
+          ret_v[r_cursor].push(ts[0].2.clone());
+        }
+        if ts_len > 1 {
+          for t_cursor in 1..ts_len {
+            ret_v.push(old_t.clone());
+            ret_v_len += 1;
+            ret_v[ret_v_len-1].push(ts[t_cursor].1.clone());
+            ret_v[ret_v_len-1].push(ts[t_cursor].2.clone());
+          }
+        }
+        r_cursor += 1;
+      }
+      //All ones of incorrect length were not a match in the last iteraton,
+      //  so remove them.
+      println!("{:?}", ret_v);
+      ret_v = ret_v.into_iter().filter(|x| x.len() == ((q_cursor+1)*2)+1).collect();
+      q_cursor += 1;
+    }
+    ret_v
+  }
+}
 
 
 
