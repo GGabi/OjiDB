@@ -27,6 +27,10 @@ fn main() {
                   None,
                 ]);
 
-  println!("{:#?}", g);
+  println!("{:#?}", g.spo);
   println!("{:#?}", v);
+
+  for triple in g.iter() {
+    println!("{:?}", triple);
+  }
 }

@@ -7,14 +7,14 @@ OjiD, pronounced "Oh-Jee-Dee", is (or will be) a Graph Database implemented in R
  - **Import and Go**: To Allow users to set-up a fully-functional graph database in just a few lines of code.
  - **Seems Functional**: Provide all of the basic features a developer would come to expect from the average database.
  - **Seems Practical**: Provide some extra luxuries where possible.
- - **Boy is this Fast!**: All the performance benefits that comes with implementing with Rust and WebAssembly as opposed to JS.
+ - **Lightning Fast**: All the performance benefits that comes with implementing with Rust and WebAssembly as opposed to JS.
 
 ### What this project will not aim to do: (yet)
  - **We're not Google**: My aim is not to provide an Enterprise-level database solution.
  - **I'm Only One Man**: I have no guarantees of OjiD working seamlessly with more than 1,000,000 RDF triples at once.
 
 ### What we do have: 
- - **Import and Go**: To set up a database simply import Web and call `Web::new()`.
+ - **Import and Go**: To set up a database simply import Web and call `Graph::new()`.
  - **An Interface**: Full support for the essential CRUD actions on graph data.
  - **Tristore**: A fully implemented, and *slightly modified*, Hexastore architecture to provide lightning-fast data retrieval and a foundation for flexible queries.
  - **POINTERS**: All "branches" in the database are linked via pointers rather than existing within one object, meaning modification of one part of the data will never cause more than the local branch to be re-allocated.

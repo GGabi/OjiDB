@@ -80,7 +80,7 @@ A data-structure that stores triples in, I hesitate to say,
 the most space-efficient way possible a-la Hexastore.
 */
 #[derive(Clone, Debug)]
-struct TripleStore(Vec<(String, Box<Vec<(String, Box<Vec<String>>)>>)>);
+pub struct TripleStore(Vec<(String, Box<Vec<(String, Box<Vec<String>>)>>)>);
 impl TripleStore {
   pub fn new() -> Self {
     TripleStore(Vec::with_capacity(8))
@@ -248,6 +248,101 @@ impl TripleStore {
     ret_v
   }
 }
+impl IntoIterator for TripleStore {
+  type Item = (String, String, String);
+  type IntoIter = TripleStoreIterator;
+  fn into_iter(self) -> Self::IntoIter {
+    TripleStoreIterator {
+      store: self,
+      curr_head: 0,
+      curr_mid: 0,
+      curr_tail: 0,
+    }
+  }
+}
+impl<'a> IntoIterator for &'a TripleStore {
+  type Item = (String, String, String);
+  type IntoIter = TripleStoreRefIterator<'a>;
+  fn into_iter(self) -> Self::IntoIter {
+    TripleStoreRefIterator {
+      store: &self,
+      curr_head: 0,
+      curr_mid: 0,
+      curr_tail: 0,
+    }
+  }
+}
+
+pub struct TripleStoreIterator {
+  store: TripleStore,
+  curr_head: usize,
+  curr_mid:  usize,
+  curr_tail: usize,
+}
+impl Iterator for TripleStoreIterator {
+  type Item = (String, String, String);
+  fn next(&mut self) -> Option<Self::Item> {
+
+    if self.curr_head == self.store.0.len() {
+      return None
+    }
+
+    let head = self.store.0[self.curr_head].0.to_string();
+    let mid = self.store.0[self.curr_head].1[self.curr_mid].0.to_string();
+    let tail = self.store.0[self.curr_head].1[self.curr_mid].1[self.curr_tail].to_string();
+
+    if self.curr_tail == self.store.0[self.curr_head].1[self.curr_mid].1.len()-1 {
+      if self.curr_mid == self.store.0[self.curr_head].1.len()-1 {
+          self.curr_head += 1;
+          self.curr_mid = 0;
+          self.curr_tail = 0;
+      }
+      else {
+        self.curr_mid += 1;
+        self.curr_tail = 0;
+      }
+    }
+    else {
+      self.curr_tail += 1;
+    }
+    return Some((head, mid, tail))
+  }
+} 
+pub struct TripleStoreRefIterator<'a> {
+  store: &'a TripleStore,
+  curr_head: usize,
+  curr_mid:  usize,
+  curr_tail: usize,
+}
+impl<'a> Iterator for TripleStoreRefIterator<'a> {
+  type Item = (String, String, String);
+  fn next(&mut self) -> Option<Self::Item> {
+
+    if self.curr_head == self.store.0.len() {
+      return None
+    }
+
+    let head = self.store.0[self.curr_head].0.to_string();
+    let mid = self.store.0[self.curr_head].1[self.curr_mid].0.to_string();
+    let tail = self.store.0[self.curr_head].1[self.curr_mid].1[self.curr_tail].to_string();
+
+    if self.curr_tail == self.store.0[self.curr_head].1[self.curr_mid].1.len()-1 {
+      if self.curr_mid == self.store.0[self.curr_head].1.len()-1 {
+          self.curr_head += 1;
+          self.curr_mid = 0;
+          self.curr_tail = 0;
+      }
+      else {
+        self.curr_mid += 1;
+        self.curr_tail = 0;
+      }
+    }
+    else {
+      self.curr_tail += 1;
+    }
+    return Some((head, mid, tail))
+  }
+} 
 
 /*
 A data-structure that sacrifices space for fast data access
@@ -256,9 +351,9 @@ unique orderings inspired by Hexastore.
 */
 #[derive(Clone, Debug)]
 pub struct Graph {
-  spo: TripleStore,
-  pos: TripleStore,
-  osp: TripleStore,
+  pub spo: TripleStore,
+  pub pos: TripleStore,
+  pub osp: TripleStore,
 }
 impl Graph {
   pub fn new() -> Self {
@@ -347,41 +442,78 @@ impl Graph {
     self.erase(&old_t);
     self.add(new_t);
   }
+  pub fn iter(&self) -> TripleStoreRefIterator {
+    TripleStoreRefIterator {
+      store: &self.spo,
+      curr_head: 0,
+      curr_mid: 0,
+      curr_tail: 0,
+    }
+  }
 }
 //WIP
 impl Graph {
-  fn get_subject(&self, s: &Option<String>) -> Vec<String> {
-    let mut ret_v: Vec<String> = Vec::new();
-    if let Some(subject) = s {
-      if let Some(_) = self.spo.0.iter().find(|(val, _)| val == subject) {
-        ret_v.push(subject.clone());
-      }
-    }
-    else {
-      for (subject, _) in self.spo.0.iter() {
-        ret_v.push(subject.clone());
-      }
-    }
-    ret_v
-  }
   pub fn get(&self, q: QueryChain) -> Vec<Vec<String>> {
 
+    /*  Traced algorithm:
+     *  If query length 0: Return empty vec
+     *  If query length 1: Return vec with get_subject() results
+     *  If query length 2: Return vec with get_double() results
+     *  If query length 3+:
+     *  - If query length even:
+     *  - - Store double for query at end
+     *  - Break up query into triples to be queried one-after-another
+     *  - Call get_triple() on the first triple to populate the return vec
+     *  - For each query triple:
+     *  - - For each chain in return values:
+     *  - - - Call get_triple() with triple: (final value of chain, query triple mid, query triple tail)
+     *  - - - If no results: Pass
+     *  - - - If 1 result:   Extend return chain by the 2 tail values in return triple
+     *  - - - If 2+ results:
+     *  - - - - Store copy of return chain
+     *  - - - - Extend old return chain by 2 tail values of first result
+     *  - - - - For each subsequent result:
+     *  - - - - - Append copy of return chain
+     *  - - - - - Extend said copy by the 2 tail values of result
+     *  - - Remove all return chains that had no query matches in the last pass
+     *  - If query chain length is even:
+     *  - - For each query chain:
+     *  - - - Call get_double() with double: (final value of chain, query double tail)
+     *  - - - If no results: Pass
+     *  - - - If 1 result:   Extend return chain by the tail value of return double
+     *  - - - If 2+ results: 
+     *  - - - - Store copy of return chain
+     *  - - - - Extend old return chain by tail value of first result
+     *  - - - - For each subsequent result:
+     *  - - - - - Append copy of return chain
+     *  - - - - - Extend said copy by tail value of result
+     *  Remove all return chains that do not match the length of the query chain
+     *  Return Vec of return chains
+     */
+
+    //Initialise return list
+    let mut ret_v: Vec<Vec<String>> = Vec::new();
+
+    //Do one-time calc on the query length
     let q_len = q.len();
+
+    //Handle the special cases of length
+    //  0 and 1.
     if q_len == 0 {
       return Vec::new()
     }
     else if q_len == 1 {
-      let mut ret_v: Vec<Vec<String>> = Vec::new();
       for s in self.get_subject(&q[0]) {
         ret_v.push(vec!(s.clone()));
       }
       return ret_v
     }
 
-    //Initialise return list
-    let mut ret_v: Vec<Vec<String>> = Vec::new();
-
-
+    //If the query chain is of even length,
+    //  then there will be a trailing double
+    //  that needs to be resolved at the end.
+    //Store this double for later use, mark
+    //  if we have one or not.
     let mut q_double = (None, None);
     let mut has_tail_double = false;
     if q_len % 2 == 0 {
@@ -389,7 +521,18 @@ impl Graph {
       q_double = (q[q_len-2].clone(), q[q_len-1].clone());
     }
 
-    if q_len >= 3 {
+    //Handle the case of a query length of exactly 2,
+    //  else proceed to handle all queries of length
+    //  3 or more.
+    if q_len == 2 {
+      for double in self.get_double(&q_double) {
+        let mut v: Vec<String> = Vec::new();
+        v.push(double.0.clone());
+        v.push(double.1.clone());
+        ret_v.push(v);
+      }
+    }
+    else {
       //Gather query triples from chain
       let mut q_triples: Vec<QueryTriple> = Vec::new();
       for i in (0..q.len()-2).step_by(2) {
@@ -459,36 +602,45 @@ impl Graph {
         r_cursor = 0;
         let mut ret_v_len: usize = ret_v.len();
         while r_cursor < ret_v_len {
-            let ds = self.get_double(&(Some(ret_v[r_cursor][ret_v[r_cursor].len()-1].clone()), q_double.1.clone()));
+            let ds = self.get_double(&(
+              Some(ret_v[r_cursor][ret_v[r_cursor].len()-1].clone()),
+              q_double.1.clone()
+            ));
             let ds_len: usize = ds.len();
-            let old_t = ret_v[r_cursor].clone(); //Store the unaffected triple for potential cloning
+            let old_t = ret_v[r_cursor].clone(); //Store the unaffected chain for potential cloning
             //Extend the return value if the query brings back a positive result.
             if ds_len > 0 {
               ret_v[r_cursor].push(ds[0].1.clone());
-            }
-            //If more than one result from the query,
-            //  push a copy of old_t to ret_v then extend with results,
-            //  Repeat for every result after the first.
-            if ds_len > 1 {
-              for d_cursor in 1..ds_len {
-                ret_v.push(old_t.clone());
-                ret_v_len += 1;
-                ret_v[ret_v_len-1].push(ds[d_cursor].1.clone());
+              //If more than one result from the query,
+              //  push a copy of old_t to ret_v then extend with results,
+              //  Repeat for every result after the first.
+              if ds_len > 1 {
+                for d_cursor in 1..ds_len {
+                  ret_v.push(old_t.clone());
+                  ret_v_len += 1;
+                  ret_v[ret_v_len-1].push(ds[d_cursor].1.clone());
+                }
               }
             }
           r_cursor += 1;
         }
       }
     }
-    else {
-      for double in self.get_double(&q_double) {
-        let mut v: Vec<String> = Vec::new();
-        v.push(double.0.clone());
-        v.push(double.1.clone());
-        ret_v.push(v);
+    ret_v = ret_v.into_iter().filter(|x| x.len() == q_len).collect();
+    ret_v
+  }
+  fn get_subject(&self, s: &Option<String>) -> Vec<String> {
+    let mut ret_v: Vec<String> = Vec::new();
+    if let Some(subject) = s {
+      if let Some(_) = self.spo.0.iter().find(|(val, _)| val == subject) {
+        ret_v.push(subject.clone());
       }
     }
-    ret_v = ret_v.into_iter().filter(|x| x.len() == q_len).collect();
+    else {
+      for (subject, _) in self.spo.0.iter() {
+        ret_v.push(subject.clone());
+      }
+    }
     ret_v
   }
   fn get_double(&self, qd: &QueryDouble) -> Vec<Double> {
