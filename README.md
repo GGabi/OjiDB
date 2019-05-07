@@ -1,7 +1,7 @@
-# OjiD - Ojibwe Dreamcatcher
+# OjiDB - Ojibwe Database
 ## A GraphDB Designed to Prevent Data-Related Nightmares
 
-OjiD, pronounced "Oh-Jee-Dee", is (or will be) a Graph Database implemented in Rust, C and WebAssembly in order to capitalise on their inherent benefits as tools; especially the increased control over how data is managed and runtime performance. It will be a fast solution to store and interact with RDF Triple data on the web, with the eventual aim of being published to NPM and allowing Javascript to interact with it as if it were ordinary JS.
+OjiDB, pronounced "Oh-Jee DB", is (or will be) a Graph Database implemented in Rust, C and WebAssembly in order to capitalise on their inherent benefits as tools; especially the increased control over how data is managed and runtime performance. It will be a fast solution to store and interact with RDF Triple data on the web, with the eventual aim of being published to NPM and allowing Javascript to interact with it as if it were ordinary JS.
 
 ### The aim of this project is to provide: 
  - **Import and Go**: To Allow users to set-up a fully-functional graph database in just a few lines of code.
@@ -26,9 +26,10 @@ OjiD, pronounced "Oh-Jee-Dee", is (or will be) a Graph Database implemented in R
  - **Documents!**: A persistence model using Amazon ION. 
    - Using C and Rust's FFI.
  - **Readable Documents!**: Optional import/export from/to JSON.
+ - **Embracing Standards**: Support for SPARQL-esque queries.
  - **Background Sorting**: Sorting of data to take place while saving to files.
    - Optimise operations to take advantage of the data being sorted.
    - Background sorting of data during periods of downtime using multi-threading.
  - **Embracing the Future**: A package that compiles to WebAssembly.
- - **The Mask**: An interface layer to allow NodeJS to interact with the package as if it's Javascript.
+ - **OjiJS**: An interface layer to allow NodeJS to interact with the package as if it's Javascript.
    - An NPM package to make this even easier.
