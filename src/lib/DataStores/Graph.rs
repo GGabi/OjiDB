@@ -1,348 +1,12 @@
-/*
-Trait to be implemented on Vec<T>.
-Forces re-allocation if and only if the
-length changes by a factor of 2, within
-a specified range.
-*/
-trait BinaryResize {
-  const MAX: usize;
-  const MIN: usize;
-  fn try_grow(&mut self);
-  fn try_shrink(&mut self);
-  fn grow(&mut self);
-  fn shrink(&mut self);
-}
-impl<T> BinaryResize for Vec<T> {
-  const MAX: usize = 64;
-  const MIN: usize = 8;
-  fn try_grow(&mut self) {
-    if self.capacity() < Self::MAX
-    && self.len() == self.capacity() {
-      self.grow();
-    }
-  }
-  fn try_shrink(&mut self) {
-    if self.capacity() > Self::MIN
-    && self.len() <= self.capacity()/2 {
-      self.shrink();
-    }
-  }
-  fn grow(&mut self) {
-    self.reserve_exact(self.capacity());
-  }
-  fn shrink(&mut self) {
-    self.shrink_to_fit();
-  }
-}
 
-/*
-Definitions of the 3 possible orderings of Triples returned from
-search queries in the graph, where:
-S = Subject
-P = Predicate
-O = Object
-*/
-enum TOrdering {
-  SPO,
-  POS,
-  OSP,
-}
-fn t_order(t: Triple, curr_ordering: &TOrdering) -> Triple {
-  match &curr_ordering {
-    POS => {
-      (t.2.to_string(),
-       t.0.to_string(),
-       t.1.to_string())  
-    },
-    OSP => {
-      (t.1.to_string(),
-       t.2.to_string(),
-       t.0.to_string())
-    },
-    _ => {
-      t.clone()
-    },
+use super::{
+  TripleStore::{TripleStore, TripleStoreRefIterator},
+  super::{
+    TOrdering, Triple, Double, QueryDouble, QueryTriple, QueryChain,
+    Queries::{Query, QueryUnit},
+    Results::{Result, ResultUnit, ResultCollection}
   }
-}
-
-/*
-Data types to reduce verbosity.
-All instances of None in Querys indicate required values.
-*/
-pub type Triple = (String, String, String);
-pub type QueryTriple = (Option<String>, Option<String>, Option<String>);
-pub type QueryChain<'a>  = &'a[Option<String>];
-type Double = (String, String);
-type QueryDouble = (Option<String>, Option<String>);
-
-/*
-A data-structure that stores triples in, I hesitate to say,
-the most space-efficient way possible a-la Hexastore.
-*/
-#[derive(Clone, Debug)]
-pub struct TripleStore(Vec<(String, Box<Vec<(String, Box<Vec<String>>)>>)>);
-impl TripleStore {
-  pub fn new() -> Self {
-    TripleStore(Vec::with_capacity(8))
-  }
-  pub fn add(&mut self, (h, m, t): Triple) {
-    let heads = &mut self.0;
-    if let Some((_, mids)) = heads.iter_mut().find(|(val, _)| val == &h) {
-      if let Some((_, tails)) = mids.iter_mut().find(|(val, _)| val == &m) {
-        if let Some(_) = tails.iter().find(|val| val == &&t) {
-          //Triple already exists in TripleStore, don't add
-          return
-        }
-        else {
-          //Head and Mid exist in store, adding Tail 
-          tails.try_grow();
-          tails.push(t);
-        }
-      }
-      else {
-        //Head exists in store, adding Mid and Tail
-        mids.try_grow();
-        let mut v = Vec::with_capacity(8);
-        v.push(t);
-        let tail = Box::new(v);
-        mids.push((m, tail));
-      }
-    }
-    else {
-      //Head, Mid and Tail do not exist in store, adding them all
-      heads.try_grow();
-      let mut v = Vec::with_capacity(8);
-      v.push(t);
-      let tail = Box::new(v);
-      let mut v = Vec::with_capacity(8);
-      v.push((m, tail));
-      let mid = Box::new(v);
-      heads.push((h, mid));
-    }
-  }
-  pub fn erase(&mut self, (h, m, t): &Triple) {
-    let heads = &mut self.0;
-    //Find the pos of the head in the store
-    if let Some(head_pos) = heads.iter_mut()
-                                 .position(|(val, _)| val == h) {
-      let mids = &mut heads[head_pos].1;
-      //Find the pos of the mid in the head
-      if let Some(mid_pos) = mids.iter_mut()
-                                  .position(|(val, _)| val == m) {
-        let tails = &mut mids[mid_pos].1;
-        //Find the pos of the tail in the mid
-        if let Some(tail_pos) = tails.iter_mut()
-                                     .position(|val| val == t) {
-          //If the triple is in the store, remove
-          //  and shrink tail Vec if needed
-          tails.remove(tail_pos);
-          tails.try_shrink();
-        }
-        //If the mid now contains no tails, remove
-        //  and shrink mid Vec if needed
-        if tails.len() == 0 {
-          mids.remove(mid_pos);
-          mids.try_shrink();
-        }
-      }
-      //If the head now contains no mids, remove
-      //  and shrink head Vec if needed
-      if mids.len() == 0 {
-        heads.remove(head_pos);
-        heads.try_shrink();
-      }
-    }
-  }
-  pub fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
-    let heads = &self.0;
-    let mut ret_v: Vec<Triple> = Vec::new();
-    match qt {
-      (Some(h), Some(m), Some(t)) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          if let Some((_, tails)) = mids.iter().find(|(val, _)| val == m) {
-            if let Some(_) = tails.iter().find(|val| val == &t) {
-              ret_v.push((h.to_string(), m.to_string(), t.to_string()));
-            }
-          }
-        }
-      },
-      (Some(h), Some(m), None) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          if let Some((_, tails)) = mids.iter().find(|(val, _)| val == m) {
-            for t in tails.iter() {
-              ret_v.push((h.to_string(), m.to_string(), t.to_string()));
-            }
-          }
-        }
-      },
-      (Some(h), None, None) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          for (m, tails) in mids.iter() {
-            for t in tails.iter() {
-              ret_v.push((h.to_string(), m.to_string(), t.to_string()));
-            }
-          }
-        }
-      },
-      (None, None, None) => {
-        for (h, mids) in heads.iter() {
-          for (m, tails) in mids.iter() {
-            for t in tails.iter() {
-              ret_v.push((h.to_string(), m.to_string(), t.to_string()));
-            }
-          }
-        }
-      },
-      _ => {},
-    };
-    ret_v
-  }
-  pub fn replace(&mut self, old_t: &Triple, new_t: Triple) {
-    self.erase(old_t);
-    self.add(new_t);
-  }
-}
-impl TripleStore {
-  fn get_ordered(&self, qt: &QueryTriple, ord: &TOrdering) -> Vec<Triple> {
-    let heads = &self.0;
-    let mut ret_v: Vec<Triple> = Vec::new();
-    match qt {
-      (Some(h), Some(m), Some(t)) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          if let Some((_, tails)) = mids.iter().find(|(val, _)| val == m) {
-            if let Some(_) = tails.iter().find(|val| val == &t) {
-              ret_v.push(t_order((h.to_string(), m.to_string(), t.to_string()), ord));
-            }
-          }
-        }
-      },
-      (Some(h), Some(m), None) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          if let Some((_, tails)) = mids.iter().find(|(val, _)| val == m) {
-            for t in tails.iter() {
-              ret_v.push(t_order((h.to_string(), m.to_string(), t.to_string()), ord));
-            }
-          }
-        }
-      },
-      (Some(h), None, None) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          for (m, tails) in mids.iter() {
-            for t in tails.iter() {
-              ret_v.push(t_order((h.to_string(), m.to_string(), t.to_string()), ord));
-            }
-          }
-        }
-      },
-      (None, None, None) => {
-        for (h, mids) in heads.iter() {
-          for (m, tails) in mids.iter() {
-            for t in tails.iter() {
-              ret_v.push(t_order((h.to_string(), m.to_string(), t.to_string()), ord));
-            }
-          }
-        }
-      },
-      _ => {},
-    };
-    ret_v
-  }
-}
-impl IntoIterator for TripleStore {
-  type Item = (String, String, String);
-  type IntoIter = TripleStoreIterator;
-  fn into_iter(self) -> Self::IntoIter {
-    TripleStoreIterator {
-      store: self,
-      curr_head: 0,
-      curr_mid: 0,
-      curr_tail: 0,
-    }
-  }
-}
-impl<'a> IntoIterator for &'a TripleStore {
-  type Item = (String, String, String);
-  type IntoIter = TripleStoreRefIterator<'a>;
-  fn into_iter(self) -> Self::IntoIter {
-    TripleStoreRefIterator {
-      store: &self,
-      curr_head: 0,
-      curr_mid: 0,
-      curr_tail: 0,
-    }
-  }
-}
-
-pub struct TripleStoreIterator {
-  store: TripleStore,
-  curr_head: usize,
-  curr_mid:  usize,
-  curr_tail: usize,
-}
-impl Iterator for TripleStoreIterator {
-  type Item = (String, String, String);
-  fn next(&mut self) -> Option<Self::Item> {
-
-    if self.curr_head == self.store.0.len() {
-      return None
-    }
-
-    let head = self.store.0[self.curr_head].0.to_string();
-    let mid = self.store.0[self.curr_head].1[self.curr_mid].0.to_string();
-    let tail = self.store.0[self.curr_head].1[self.curr_mid].1[self.curr_tail].to_string();
-
-    if self.curr_tail == self.store.0[self.curr_head].1[self.curr_mid].1.len()-1 {
-      if self.curr_mid == self.store.0[self.curr_head].1.len()-1 {
-          self.curr_head += 1;
-          self.curr_mid = 0;
-          self.curr_tail = 0;
-      }
-      else {
-        self.curr_mid += 1;
-        self.curr_tail = 0;
-      }
-    }
-    else {
-      self.curr_tail += 1;
-    }
-    return Some((head, mid, tail))
-  }
-} 
-pub struct TripleStoreRefIterator<'a> {
-  store: &'a TripleStore,
-  curr_head: usize,
-  curr_mid:  usize,
-  curr_tail: usize,
-}
-impl<'a> Iterator for TripleStoreRefIterator<'a> {
-  type Item = (String, String, String);
-  fn next(&mut self) -> Option<Self::Item> {
-
-    if self.curr_head == self.store.0.len() {
-      return None
-    }
-
-    let head = self.store.0[self.curr_head].0.to_string();
-    let mid = self.store.0[self.curr_head].1[self.curr_mid].0.to_string();
-    let tail = self.store.0[self.curr_head].1[self.curr_mid].1[self.curr_tail].to_string();
-
-    if self.curr_tail == self.store.0[self.curr_head].1[self.curr_mid].1.len()-1 {
-      if self.curr_mid == self.store.0[self.curr_head].1.len()-1 {
-          self.curr_head += 1;
-          self.curr_mid = 0;
-          self.curr_tail = 0;
-      }
-      else {
-        self.curr_mid += 1;
-        self.curr_tail = 0;
-      }
-    }
-    else {
-      self.curr_tail += 1;
-    }
-    return Some((head, mid, tail))
-  }
-} 
+};
 
 /*
 A data-structure that sacrifices space for fast data access
@@ -669,35 +333,94 @@ impl Graph {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+impl Graph {
+  pub fn get_trial(&self, q: Query) -> ResultCollection {
+    let mut rc = ResultCollection::new();
+    rc.query = q.clone();
+    match q {
+      Query::Double(s, p) => {
+        let mut q1: Option<String>;
+        let mut q2: Option<String>;
+        match &s {
+          QueryUnit::Val(a) => { q1 = Some(a.clone()); },
+          QueryUnit::Var(_)
+          | QueryUnit::Anon
+          | QueryUnit::Ignore => { q1 = None; },
+        }
+        match &p {
+          QueryUnit::Val(b) => { q2 = Some(b.clone()); },
+          QueryUnit::Var(_)
+          | QueryUnit::Anon
+          | QueryUnit::Ignore => { q2 = None; },
+        }
+        let query_res = self.get_double(&(q1, q2));
+        if query_res.len() > 0 {
+          let mut r = Result::new();
+          match s {
+            QueryUnit::Val(a) => { r.add_anon(ResultUnit::Value(a)); },
+            QueryUnit::Var(a) => { r.add_var(a, query_res[0].0.clone()); },
+            QueryUnit::Anon   => { r.add_anon(ResultUnit::Value(query_res[0].0.clone())); },
+            QueryUnit::Ignore => { r.add_anon(ResultUnit::Ignore); },
+          }
+          match p {
+            QueryUnit::Val(b) => { r.add_anon(ResultUnit::Value(b)); },
+            QueryUnit::Var(b) => { r.add_var(b, query_res[0].1.clone()); },
+            QueryUnit::Anon   => { r.add_anon(ResultUnit::Value(query_res[0].1.clone())); },
+            QueryUnit::Ignore => { r.add_anon(ResultUnit::Ignore); },
+          }
+          rc.results.push(r);
+        }
+      },
+      Query::Triple(s, p, o) => {
+        let mut q1: Option<String>;
+        let mut q2: Option<String>;
+        let mut q3: Option<String>;
+        match &s {
+          QueryUnit::Val(a) => { q1 = Some(a.clone()); },
+          QueryUnit::Var(_)
+          | QueryUnit::Anon
+          | QueryUnit::Ignore => { q1 = None; },
+        }
+        match &p {
+          QueryUnit::Val(b) => { q2 = Some(b.clone()); },
+          QueryUnit::Var(_)
+          | QueryUnit::Anon
+          | QueryUnit::Ignore => { q2 = None; },
+        }
+        match &o {
+          QueryUnit::Val(b) => { q3 = Some(b.clone()); },
+          QueryUnit::Var(_)
+          | QueryUnit::Anon
+          | QueryUnit::Ignore => { q3 = None; },
+        }
+        let query_res = self.get_triple(&(q1, q2, q3));
+        if query_res.len() > 0 {
+          for i in 0..query_res.len() {
+            let mut r = Result::new();
+            match &s {
+              QueryUnit::Val(a) => { r.add_anon(ResultUnit::Value(a.to_string())); },
+              QueryUnit::Var(a) => { r.add_var(a.to_string(), query_res[i].0.clone()); },
+              QueryUnit::Anon   => { r.add_anon(ResultUnit::Value(query_res[i].0.clone())); },
+              QueryUnit::Ignore => { r.add_anon(ResultUnit::Ignore); },
+            }
+            match &p {
+              QueryUnit::Val(b) => { r.add_anon(ResultUnit::Value(b.to_string())); },
+              QueryUnit::Var(b) => { r.add_var(b.to_string(), query_res[i].1.clone()); },
+              QueryUnit::Anon   => { r.add_anon(ResultUnit::Value(query_res[i].1.clone())); },
+              QueryUnit::Ignore => { r.add_anon(ResultUnit::Ignore); },
+            }
+            match &o {
+              QueryUnit::Val(c) => { r.add_anon(ResultUnit::Value(c.to_string())); },
+              QueryUnit::Var(c) => { r.add_var(c.to_string(), query_res[i].2.clone()); },
+              QueryUnit::Anon   => { r.add_anon(ResultUnit::Value(query_res[i].2.clone())); },
+              QueryUnit::Ignore => { r.add_anon(ResultUnit::Ignore); },
+            }
+            rc.results.push(r);
+          }
+        }
+      }
+      _ => {},
+    };
+    rc
+  }
+}
