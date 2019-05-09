@@ -1,6 +1,5 @@
 
 use std::collections::HashMap;
-
 use super::Queries::{Query, QueryUnit};
 
 #[derive(Clone, Debug)]
@@ -103,31 +102,17 @@ impl Result {
       None => None,
     }
   }
+  pub fn iter(&self) -> ResultRefIterator {
+    ResultRefIterator {
+      store: &self,
+      curr_pos: 0,
+    }
+  }
 }
 
 pub struct ResultCollection {
   results: Vec<Result>,
   query: Query,
-}
-impl ResultCollection {
-  pub fn new() -> Self {
-    ResultCollection {
-      results: Vec::new(),
-      query: Query::Null,
-    }
-  }
-  pub fn from(q: Query, rs: Vec<Result>) -> Self {
-    ResultCollection {
-      results: rs,
-      query: q,
-    }
-  }
-  pub fn iter(&self) -> ResultCollectionRefIterator {
-    ResultCollectionRefIterator {
-      results: &self,
-      curr_pos: 0,
-    }
-  }
 }
 pub struct ResultCollectionIterator {
   results: ResultCollection,
@@ -183,4 +168,24 @@ impl std::ops::DerefMut for ResultCollection {
   fn deref_mut(&mut self) -> &mut Self::Target {
       &mut self.results
     }
+}
+impl ResultCollection {
+  pub fn new() -> Self {
+    ResultCollection {
+      results: Vec::new(),
+      query: Query::Null,
+    }
+  }
+  pub fn from(q: Query, rs: Vec<Result>) -> Self {
+    ResultCollection {
+      results: rs,
+      query: q,
+    }
+  }
+  pub fn iter(&self) -> ResultCollectionRefIterator {
+    ResultCollectionRefIterator {
+      results: &self,
+      curr_pos: 0,
+    }
+  }
 }

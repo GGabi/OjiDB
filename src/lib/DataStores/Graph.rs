@@ -1,10 +1,12 @@
 
-use super::{TripleStore::{TripleStore, TripleStoreRefIterator},
-            Triple, Double, QueryDouble, QueryTriple, QueryChain,
-            TOrdering,
-            Queries::{Query, QueryUnit},
-            Results::{Result, ResultUnit}
-           };
+use super::{
+  TripleStore::{TripleStore, TripleStoreRefIterator},
+  super::{
+    TOrdering, Triple, Double, QueryDouble, QueryTriple, QueryChain,
+    Queries::{Query, QueryUnit},
+    Results::{Result, ResultUnit}
+  }
+};
 
 /*
 A data-structure that sacrifices space for fast data access

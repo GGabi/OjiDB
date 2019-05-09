@@ -1,5 +1,5 @@
 
-use super::{Triple, QueryTriple, TOrdering, t_order};
+use super::super::{Triple, QueryTriple, TOrdering, t_order};
 
 /*
 Trait to be implemented on Vec<T>.

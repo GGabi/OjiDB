@@ -1,6 +1,6 @@
 mod lib;
 
-use crate::lib::{Graph::Graph, Queries::{Query, QueryUnit}};
+use lib::{Graph, DBQuery};
 
 fn main() {
   let mut g = Graph::new();
@@ -34,7 +34,7 @@ fn main() {
     println!("{:?}", triple);
   }
 
-  let q = Query::from_str(&["James", "$opinion", "$lang"]).unwrap();
+  let q = DBQuery::from_str(&["James", "$opinion", "$lang"]).unwrap();
   println!("{:?}", q); //Prints Double(Val("Gabe"), Var("value"))
   let r = g.get_trial(q);
   println!("{:#?}", r);

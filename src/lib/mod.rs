@@ -1,25 +1,27 @@
-pub mod Graph;
-pub mod TripleStore;
+pub mod DataStores;
 pub mod Queries;
 pub mod Results;
 
-// use Graph::Graph;
-// use TripleStore::TripleStore;
-use Queries::{Query, QueryUnit};
-use Results::{Result, ResultUnit, ResultCollection};
+pub use DataStores::Graph::Graph as Graph;
+pub use DataStores::TripleStore::TripleStore as TripleStore;
+pub use Queries::Query as DBQuery;
+pub use Queries::QueryUnit as DBQueryUnit;
+pub use Results::Result as DBResult;
+pub use Results::ResultUnit as DBResultUnit;
+pub use Results::ResultCollection as DBResultCollection;
 
-/*
-Definitions of the 3 possible orderings of Triples returned from
-search queries in the graph, where:
-S = Subject
-P = Predicate
-O = Object
-*/
+//Delcare common resources for nested modules
 pub enum TOrdering {
   SPO,
   POS,
   OSP,
 }
+
+type Triple = (String, String, String);
+type QueryTriple = (Option<String>, Option<String>, Option<String>);
+type QueryChain<'a>  = &'a[Option<String>];
+type Double = (String, String);
+type QueryDouble = (Option<String>, Option<String>);
 fn t_order(t: Triple, curr_ordering: &TOrdering) -> Triple {
   match &curr_ordering {
     POS => {
@@ -37,13 +39,3 @@ fn t_order(t: Triple, curr_ordering: &TOrdering) -> Triple {
     },
   }
 }
-
-/*
-Data types to reduce verbosity.
-All instances of None in Querys indicate required values.
-*/
-pub type Triple = (String, String, String);
-pub type QueryTriple = (Option<String>, Option<String>, Option<String>);
-pub type QueryChain<'a>  = &'a[Option<String>];
-type Double = (String, String);
-type QueryDouble = (Option<String>, Option<String>);

@@ -19,6 +19,7 @@ impl QueryUnit {
     }
   }
 }
+
 #[derive(Clone, Debug)]
 pub enum Query {
   Null,
@@ -28,7 +29,7 @@ pub enum Query {
   Chain(Vec<QueryUnit>),
 }
 impl Query {
-  fn from(vals: &[QueryUnit]) -> Option<Self> {
+  pub fn from(vals: &[QueryUnit]) -> Option<Self> {
     match vals.len() {
       0 => None,
       1 => Some(Query::Single(vals[0].clone())),
