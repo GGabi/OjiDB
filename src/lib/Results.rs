@@ -110,9 +110,10 @@ impl Result {
   }
 }
 
+#[derive(Clone, Debug)]
 pub struct ResultCollection {
-  results: Vec<Result>,
-  query: Query,
+  pub results: Vec<Result>,
+  pub query: Query,
 }
 pub struct ResultCollectionIterator {
   results: ResultCollection,

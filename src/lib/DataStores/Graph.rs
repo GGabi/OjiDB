@@ -4,7 +4,7 @@ use super::{
   super::{
     TOrdering, Triple, Double, QueryDouble, QueryTriple, QueryChain,
     Queries::{Query, QueryUnit},
-    Results::{Result, ResultUnit}
+    Results::{Result, ResultUnit, ResultCollection}
   }
 };
 
@@ -334,8 +334,9 @@ impl Graph {
 }
 
 impl Graph {
-  pub fn get_trial(&self, q: Query) -> Result {
-    let mut r = Result::new();
+  pub fn get_trial(&self, q: Query) -> ResultCollection {
+    let mut rc = ResultCollection::new();
+    rc.query = q.clone();
     match q {
       Query::Double(s, p) => {
         let mut q1: Option<String>;
@@ -354,6 +355,7 @@ impl Graph {
         }
         let query_res = self.get_double(&(q1, q2));
         if query_res.len() > 0 {
+          let mut r = Result::new();
           match s {
             QueryUnit::Val(a) => { r.add_anon(ResultUnit::Value(a)); },
             QueryUnit::Var(a) => { r.add_var(a, query_res[0].0.clone()); },
@@ -366,6 +368,7 @@ impl Graph {
             QueryUnit::Anon   => { r.add_anon(ResultUnit::Value(query_res[0].1.clone())); },
             QueryUnit::Ignore => { r.add_anon(ResultUnit::Ignore); },
           }
+          rc.results.push(r);
         }
       },
       Query::Triple(s, p, o) => {
@@ -393,6 +396,7 @@ impl Graph {
         let query_res = self.get_triple(&(q1, q2, q3));
         if query_res.len() > 0 {
           for i in 0..query_res.len() {
+            let mut r = Result::new();
             match &s {
               QueryUnit::Val(a) => { r.add_anon(ResultUnit::Value(a.to_string())); },
               QueryUnit::Var(a) => { r.add_var(a.to_string(), query_res[i].0.clone()); },
@@ -411,11 +415,12 @@ impl Graph {
               QueryUnit::Anon   => { r.add_anon(ResultUnit::Value(query_res[i].2.clone())); },
               QueryUnit::Ignore => { r.add_anon(ResultUnit::Ignore); },
             }
+            rc.results.push(r);
           }
         }
       }
       _ => {},
     };
-    r
+    rc
   }
 }

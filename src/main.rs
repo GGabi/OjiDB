@@ -20,24 +20,29 @@ fn main() {
   g.add(("James".into(), "likes".into(), "C++".into()));
   g.add(("Gabe".into(), "likes".into(), "James".into()));
 
-  let v = g.get(&[None,
-                  Some("likes".into()),
-                  None,
-                  None,
-                  None,
-                ]);
+  println!("Graph Structure:\n{:#?}", g.spo);
 
-  println!("{:#?}", g.spo);
-  println!("{:#?}", v);
-
+  println!("\nList of Triples in Graph:");
   for triple in g.iter() {
     println!("{:?}", triple);
   }
+  let q = [None,
+           Some("likes".into()),
+           None,
+           None,
+           None];
+  let v = g.get(&q);
+  println!("\nBasic Query:\n{:?}", q);
+  println!("Basic Query Results:\n{:#?}", v);
 
-  let q = DBQuery::from_str(&["James", "$opinion", "$lang"]).unwrap();
-  println!("{:?}", q); //Prints Double(Val("Gabe"), Var("value"))
-  let r = g.get_trial(q);
-  println!("{:#?}", r);
-  println!("{:?}", r.get_var("opinion")); //Prints "likes"
-  println!("{:?}", r.get_var("lang")); //Prints "likes"
+  let q = DBQuery::from_str(&["?", "$opinion", "$object"]).unwrap();
+  let rc = g.get_trial(q);
+  println!("\nBetter Query:\n{:?}\nResults:", rc.query);
+  for r in &rc {
+    println!("{:?}", r);
+  }
+  println!("\nInterpretation using vars: (Someone $opinion $object)");
+  for r in rc.iter() {
+    println!("Someone {} {}", r.get_var("opinion").unwrap(), r.get_var("object").unwrap());
+  }
 }
