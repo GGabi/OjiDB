@@ -1,6 +1,6 @@
 mod lib;
 
-use crate::lib::Graph;
+use crate::lib::{Graph::Graph, Queries::{Query, QueryUnit}};
 
 fn main() {
   let mut g = Graph::new();
@@ -33,4 +33,11 @@ fn main() {
   for triple in g.iter() {
     println!("{:?}", triple);
   }
+
+  let q = Query::from_str(&["James", "$opinion", "$lang"]).unwrap();
+  println!("{:?}", q); //Prints Double(Val("Gabe"), Var("value"))
+  let r = g.get_trial(q);
+  println!("{:#?}", r);
+  println!("{:?}", r.get_var("opinion")); //Prints "likes"
+  println!("{:?}", r.get_var("lang")); //Prints "likes"
 }
