@@ -1,5 +1,5 @@
 
-use super::super::{Triple, QueryTriple, TOrdering, t_order};
+use super::super::{Triple, Double, QueryTriple, QueryDouble, QueryChain, TOrdering, t_order};
 
 /*
 Trait to be implemented on Vec<T>.
@@ -38,10 +38,11 @@ impl<T> BinaryResize for Vec<T> {
   }
 }
 
-/*
-A data-structure that stores triples in, I hesitate to say,
-the most space-efficient way possible a-la Hexastore.
-*/
+/*************************
+*
+* TripleStore
+*
+*************************/
 #[derive(Clone, Debug)]
 pub struct TripleStore(pub Vec<(String, Box<Vec<(String, Box<Vec<String>>)>>)>);
 impl TripleStore {
@@ -116,6 +117,29 @@ impl TripleStore {
       }
     }
   }
+  pub fn get(&self, qc: QueryChain) -> Vec<Vec<String>> {
+    let q_len: usize = qc.len();
+    let mut ret_v: Vec<Vec<String>> = Vec::new();
+    match q_len {
+      1 => {
+        for h in self.get_single(&qc[0]).iter() {
+          ret_v.push(vec!(h.to_string()));
+        }
+      },
+      2 => {
+        for (h, m) in self.get_double(&(qc[0].clone(), qc[1].clone())).iter() {
+          ret_v.push(vec!(h.to_string(), m.to_string()));
+        }
+      },
+      3 => {
+        for (h, m, t) in self.get_triple(&(qc[0].clone(), qc[1].clone(), qc[2].clone())).iter() {
+          ret_v.push(vec!(h.to_string(), m.to_string(), t.to_string()));
+        }
+      },
+      _ => {},
+    };
+    ret_v
+  }
   pub fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
     let heads = &self.0;
     let mut ret_v: Vec<Triple> = Vec::new();
@@ -158,6 +182,52 @@ impl TripleStore {
       },
       _ => {},
     };
+    ret_v
+  }
+  pub fn get_double(&self, qd: &QueryDouble) -> Vec<Double> {
+    let heads = &self.0;
+    let mut ret_v: Vec<Double> = Vec::new();
+    match qd {
+      (Some(h), Some(t)) => {
+        if let Some((_, tails)) = heads.iter().find(|(val, _)| val == h) {
+          if let Some(_) = tails.iter().find(|(val, _)| val == t) {
+            ret_v.push((h.to_string(), t.to_string()));
+          }
+        }
+      },
+      (Some(h), None) => {
+        if let Some((_, tails)) = heads.iter().find(|(val, _)| val == h) {
+          for (t, _) in tails.iter() {
+            ret_v.push((h.to_string(), t.to_string()));
+          }
+        }
+      },
+      (None, None) => {
+        for (h, tails) in heads.iter() {
+          for (t, _) in tails.iter() {
+            ret_v.push((h.to_string(), t.to_string()));
+          }
+        }
+      },
+      _ => {},
+    };
+    ret_v
+  }
+  pub fn get_single(&self, qs: &Option<String>) -> Vec<String> {
+    let heads = &self.0;
+    let mut ret_v: Vec<String> = Vec::new();
+    match qs {
+      Some(h) => {
+        if let Some((_, _)) = heads.iter().find(|(val, _)| val == h) {
+          ret_v.push(h.to_string());
+        }
+      },
+      None => {
+        for (h, _) in heads.iter() {
+          ret_v.push(h.to_string());
+        }
+      },
+    }
     ret_v
   }
   pub fn replace(&mut self, old_t: &Triple, new_t: Triple) {
@@ -235,8 +305,6 @@ impl<'a> IntoIterator for &'a TripleStore {
     }
   }
 }
-
-
 pub struct TripleStoreIterator {
   store: TripleStore,
   curr_head: usize,
@@ -272,8 +340,6 @@ impl Iterator for TripleStoreIterator {
     return Some((head, mid, tail))
   }
 } 
-
-
 pub struct TripleStoreRefIterator<'a> {
   pub store: &'a TripleStore,
   pub curr_head: usize,

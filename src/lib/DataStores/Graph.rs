@@ -334,6 +334,10 @@ impl Graph {
 }
 
 impl Graph {
+  // fn getget(&self, Queries::Query::Triple(s, p, o): Query) {
+  //   let mut rc = ResultCollection::new();
+    
+  // }
   pub fn get_trial(&self, q: Query) -> ResultCollection {
     let mut rc = ResultCollection::new();
     rc.query = q.clone();

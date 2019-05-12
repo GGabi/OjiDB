@@ -1,4 +1,9 @@
 
+/*************************
+*
+* QueryUnit
+*
+*************************/
 #[derive(Clone, Debug)]
 pub enum QueryUnit {
   Val(String),
@@ -20,6 +25,11 @@ impl QueryUnit {
   }
 }
 
+/*************************
+*
+* Query
+*
+*************************/
 #[derive(Clone, Debug)]
 pub enum Query {
   Null,

@@ -2,6 +2,11 @@
 use std::collections::HashMap;
 use super::Queries::{Query, QueryUnit};
 
+/*************************
+*
+* Result
+*
+*************************/
 #[derive(Clone, Debug)]
 pub enum ResultUnit {
   Value(String),
@@ -110,6 +115,11 @@ impl Result {
   }
 }
 
+/*************************
+*
+* ResultCollection
+*
+*************************/
 #[derive(Clone, Debug)]
 pub struct ResultCollection {
   pub results: Vec<Result>,

@@ -1,6 +1,6 @@
-pub mod DataStores;
-pub mod Queries;
-pub mod Results;
+mod DataStores;
+mod Queries;
+mod Results;
 
 pub use DataStores::Graph::Graph as Graph;
 pub use DataStores::TripleStore::TripleStore as TripleStore;
