@@ -35,7 +35,7 @@ fn main() {
   println!("\nBasic Query:\n{:?}", q);
   println!("Basic Query Results:\n{:#?}", v);
 
-  let q = DBQuery::from_str(&["?", "$opinion", "$object"]).unwrap();
+  let q = DBQuery::from_str(&["?", "$opinion", "$object"]);
   let rc = g.get_trial(q);
   println!("\nBetter Query:\n{:?}\nResults:", rc.query);
   for r in &rc {

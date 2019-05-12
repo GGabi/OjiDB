@@ -1,5 +1,5 @@
 
-use super::super::{Triple, Double, QueryTriple, QueryDouble, QueryChain, TOrdering, t_order};
+use super::super::{Triple, Double, QueryTriple, QueryDouble, QueryChain, Ordering};
 
 /*
 Trait to be implemented on Vec<T>.
@@ -233,52 +233,6 @@ impl TripleStore {
   pub fn replace(&mut self, old_t: &Triple, new_t: Triple) {
     self.erase(old_t);
     self.add(new_t);
-  }
-}
-impl TripleStore {
-  pub fn get_ordered(&self, qt: &QueryTriple, ord: &TOrdering) -> Vec<Triple> {
-    let heads = &self.0;
-    let mut ret_v: Vec<Triple> = Vec::new();
-    match qt {
-      (Some(h), Some(m), Some(t)) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          if let Some((_, tails)) = mids.iter().find(|(val, _)| val == m) {
-            if let Some(_) = tails.iter().find(|val| val == &t) {
-              ret_v.push(t_order((h.to_string(), m.to_string(), t.to_string()), ord));
-            }
-          }
-        }
-      },
-      (Some(h), Some(m), None) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          if let Some((_, tails)) = mids.iter().find(|(val, _)| val == m) {
-            for t in tails.iter() {
-              ret_v.push(t_order((h.to_string(), m.to_string(), t.to_string()), ord));
-            }
-          }
-        }
-      },
-      (Some(h), None, None) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          for (m, tails) in mids.iter() {
-            for t in tails.iter() {
-              ret_v.push(t_order((h.to_string(), m.to_string(), t.to_string()), ord));
-            }
-          }
-        }
-      },
-      (None, None, None) => {
-        for (h, mids) in heads.iter() {
-          for (m, tails) in mids.iter() {
-            for t in tails.iter() {
-              ret_v.push(t_order((h.to_string(), m.to_string(), t.to_string()), ord));
-            }
-          }
-        }
-      },
-      _ => {},
-    };
-    ret_v
   }
 }
 impl IntoIterator for TripleStore {
