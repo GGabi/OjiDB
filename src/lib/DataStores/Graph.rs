@@ -315,6 +315,16 @@ impl Graph {
     };
     store.get_double(qd)
   }
+  fn get_single(&self, q: &Option<String>, ord: Ordering) -> Vec<String> {
+    use Ordering::{S, P, O};
+    let store = match &ord {
+      S => { &self.spo },
+      P => { &self.pos },
+      O => { &self.osp },
+      _  => { return Vec::new() },
+    };
+    store.get_single(q)
+  }
   pub fn get_trial(&self, q: Query) -> ResultCollection {
     use QueryUnit::{Val, Var, Anon, Ignore};
     use Ordering::{S, P, O};
@@ -322,7 +332,42 @@ impl Graph {
     rc.query = q.clone();
     match q {
       Query::Null => {/*Do nothing*/},
-      Query::Single(s, _) => {},
+      Query::Single(h, ord) => {
+        //Filter out all the Ignores, call again with corrected query
+        match &h {
+          Ignore => {
+            return rc
+          },
+          _ => {},
+        };
+        //Actually start processing now
+        let mut q: Option<String>;
+        match &h {
+          Val(a) => { q = Some(a.clone()); },
+          Var(_)
+          | Anon
+          | Ignore => { q = None; },
+        };
+        //Rearrange the Ordering to match the stores Graph has
+        let query_res = match &ord {
+          P => { self.get_single(&q, P) },
+          S => { self.get_single(&q, S) },
+          O => { self.get_single(&q, O) },
+          _ => { self.get_single(&q, S) },
+        };
+        if query_res.len() > 0 {
+          for i in 0..query_res.len() {
+            let mut r = Result::new();
+            match &h {
+              Val(a) => { r.add_anon(ResultUnit::Value(a.to_string())); },
+              Var(a) => { r.add_var(a.to_string(), query_res[i].clone()); },
+              Anon   => { r.add_anon(ResultUnit::Value(query_res[i].clone())); },
+              Ignore => { r.add_anon(ResultUnit::Ignore); },
+            }
+            rc.results.push(r);
+          }
+        }
+      },
       Query::Double(h, t, ord) => {
         //Filter out all the Ignores, call again with corrected query
         match (&h, &t) {
