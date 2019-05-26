@@ -20,6 +20,7 @@ impl QueryUnit {
     }
     let first_char = s.chars().next().unwrap();
     match first_char {
+      '_' => { return QueryUnit::Ignore },
       '$' => { return QueryUnit::Var(s[1..].into()) },
       '?' => { return QueryUnit::Anon },
       _ => { return QueryUnit::Val(s.into()) },

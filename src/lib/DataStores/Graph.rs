@@ -33,82 +33,6 @@ impl Graph {
     self.pos.add((p.to_string(), o.to_string(), s.to_string()));
     self.osp.add((o, s, p));
   }
-  pub fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
-    match qt {
-      (Some(s), Some(p), Some(o)) => {
-        self.spo.get_triple(&(
-          Some(s.to_string()),
-          Some(p.to_string()),
-          Some(o.to_string())
-          ))
-      },
-      (Some(s), Some(p), None) => {
-        self.spo.get_triple(&(
-          Some(s.to_string()),
-          Some(p.to_string()),
-          None
-          ))
-      },
-      (Some(s), None, Some(o)) => {
-        let mut ret_v: Vec<Triple> = Vec::new();
-        let triples = self.osp.get_triple(&(
-          Some(o.to_string()),
-          Some(s.to_string()),
-          None));
-        for triple in triples {
-          ret_v.push(t_order(triple, &Ordering::OSP));
-        }
-        ret_v
-      },
-      (None, Some(p), Some(o)) => {
-        let mut ret_v: Vec<Triple> = Vec::new();
-        let triples = self.pos.get_triple(&(
-          Some(p.to_string()),
-          Some(o.to_string()),
-          None));
-        for triple in triples {
-          ret_v.push(t_order(triple, &Ordering::POS));
-        }
-        ret_v
-      },
-      (Some(s), None, None) => {
-        self.spo.get_triple(&(
-          Some(s.to_string()),
-          None,
-          None
-          ))
-      },
-      (None, Some(p), None) => {
-        let mut ret_v: Vec<Triple> = Vec::new();
-        let triples = self.pos.get_triple(&(
-          Some(p.to_string()),
-          None,
-          None));
-        for triple in triples {
-          ret_v.push(t_order(triple, &Ordering::POS));
-        }
-        ret_v
-      },
-      (None, None, Some(o)) => {
-        let mut ret_v: Vec<Triple> = Vec::new();
-        let triples = self.osp.get_triple(&(
-          Some(o.to_string()),
-          None,
-          None));
-        for triple in triples {
-          ret_v.push(t_order(triple, &Ordering::OSP));
-        }
-        ret_v
-      },
-      (None, None, None) => {
-        self.spo.get_triple(&(
-          None,
-          None,
-          None
-          ))
-      },
-    }
-  }
   pub fn erase(&mut self, (s, p, o): &Triple) {
     self.spo.erase(&(s.to_string(), p.to_string(), o.to_string()));
     self.pos.erase(&(p.to_string(), o.to_string(), s.to_string()));
@@ -305,6 +229,82 @@ impl Graph {
 }
 
 impl Graph {
+  fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
+    match qt {
+      (Some(s), Some(p), Some(o)) => {
+        self.spo.get_triple(&(
+          Some(s.to_string()),
+          Some(p.to_string()),
+          Some(o.to_string())
+          ))
+      },
+      (Some(s), Some(p), None) => {
+        self.spo.get_triple(&(
+          Some(s.to_string()),
+          Some(p.to_string()),
+          None
+          ))
+      },
+      (Some(s), None, Some(o)) => {
+        let mut ret_v: Vec<Triple> = Vec::new();
+        let triples = self.osp.get_triple(&(
+          Some(o.to_string()),
+          Some(s.to_string()),
+          None));
+        for triple in triples {
+          ret_v.push(t_order(triple, &Ordering::OSP));
+        }
+        ret_v
+      },
+      (None, Some(p), Some(o)) => {
+        let mut ret_v: Vec<Triple> = Vec::new();
+        let triples = self.pos.get_triple(&(
+          Some(p.to_string()),
+          Some(o.to_string()),
+          None));
+        for triple in triples {
+          ret_v.push(t_order(triple, &Ordering::POS));
+        }
+        ret_v
+      },
+      (Some(s), None, None) => {
+        self.spo.get_triple(&(
+          Some(s.to_string()),
+          None,
+          None
+          ))
+      },
+      (None, Some(p), None) => {
+        let mut ret_v: Vec<Triple> = Vec::new();
+        let triples = self.pos.get_triple(&(
+          Some(p.to_string()),
+          None,
+          None));
+        for triple in triples {
+          ret_v.push(t_order(triple, &Ordering::POS));
+        }
+        ret_v
+      },
+      (None, None, Some(o)) => {
+        let mut ret_v: Vec<Triple> = Vec::new();
+        let triples = self.osp.get_triple(&(
+          Some(o.to_string()),
+          None,
+          None));
+        for triple in triples {
+          ret_v.push(t_order(triple, &Ordering::OSP));
+        }
+        ret_v
+      },
+      (None, None, None) => {
+        self.spo.get_triple(&(
+          None,
+          None,
+          None
+          ))
+      },
+    }
+  }
   fn get_double(&self, qd: &QueryDouble, ord: [Ordering; 2]) -> Vec<Double> {
     use Ordering::{S, P, O};
     let store = match &ord {
