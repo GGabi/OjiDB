@@ -305,61 +305,154 @@ impl Graph {
 }
 
 impl Graph {
+  fn get_double(&self, qd: &QueryDouble, ord: [Ordering; 2]) -> Vec<Double> {
+    use Ordering::{S, P, O};
+    let store = match &ord {
+      [S,P] => { &self.spo },
+      [P,O] => { &self.pos },
+      [O,S] => { &self.osp },
+      _  => { return Vec::new() },
+    };
+    store.get_double(qd)
+  }
   pub fn get_trial(&self, q: Query) -> ResultCollection {
+    use QueryUnit::{Val, Var, Anon, Ignore};
+    use Ordering::{S, P, O};
     let mut rc = ResultCollection::new();
     rc.query = q.clone();
     match q {
-      Query::Single(s) => {},
-      Query::Double(s, p) => {},
-      Query::Triple(s, p, o) => {
+      Query::Null => {/*Do nothing*/},
+      Query::Single(s, _) => {},
+      Query::Double(h, t, ord) => {
+        //Filter out all the Ignores, call again with corrected query
+        match (&h, &t) {
+          (Ignore, _) => {
+            return self.get_trial(Query::Single(t, ord[1].clone()))
+          },
+          (_, Ignore) => {
+            return self.get_trial(Query::Single(h, ord[0].clone()))
+          },
+          (Ignore, Ignore) => {
+            return rc
+          },
+          _ => {},
+        };
+        //Actually start processing now
+        let mut q1: Option<String>;
+        let mut q2: Option<String>;
+        match &h {
+          Val(a) => { q1 = Some(a.clone()); },
+          Var(_)
+          | Anon
+          | Ignore => { q1 = None; },
+        };
+        match &t {
+          Val(b) => { q2 = Some(b.clone()); },
+          Var(_)
+          | Anon
+          | Ignore => { q2 = None; },
+        };
+        //Rearrange the Ordering to match the stores Graph has
+        let query_res = match &ord {
+          [P,S] => { self.get_double(&(q1, q2), [S,P]) },
+          [S,O] => { self.get_double(&(q1, q2), [O,S]) },
+          [O,P] => { self.get_double(&(q1, q2), [P,O]) },
+          _ => { self.get_double(&(q1, q2), ord) }
+        };
+        if query_res.len() > 0 {
+          for i in 0..query_res.len() {
+            let mut r = Result::new();
+            match &h {
+              Val(a) => { r.add_anon(ResultUnit::Value(a.to_string())); },
+              Var(a) => { r.add_var(a.to_string(), query_res[i].0.clone()); },
+              Anon   => { r.add_anon(ResultUnit::Value(query_res[i].0.clone())); },
+              Ignore => { r.add_anon(ResultUnit::Ignore); },
+            }
+            match &t {
+              Val(b) => { r.add_anon(ResultUnit::Value(b.to_string())); },
+              Var(b) => { r.add_var(b.to_string(), query_res[i].1.clone()); },
+              Anon   => { r.add_anon(ResultUnit::Value(query_res[i].1.clone())); },
+              Ignore => { r.add_anon(ResultUnit::Ignore); },
+            }
+            rc.results.push(r);
+          }
+        }
+      },
+      Query::Triple(s, p, o, _) => {
+        //Filter out all the Ignores, call again with corrected query
+        match (&s, &p, &o) {
+          (Ignore, _, _) => {
+            return self.get_trial(Query::Double(p, o, [P, O]))
+          },
+          (_, Ignore, _) => {
+            return self.get_trial(Query::Double(s, o, [S, O]))
+          },
+          (_, _, Ignore) => {
+            return self.get_trial(Query::Double(s, p, [S, P]))
+          },
+          (Ignore, Ignore, _) => {
+            return self.get_trial(Query::Single(o, O))
+          },
+          (Ignore, _, Ignore) => {
+            return self.get_trial(Query::Single(p, P))
+          },
+          (_, Ignore, Ignore) => {
+            return self.get_trial(Query::Single(s, S))
+          },
+          (Ignore, Ignore, Ignore) => {
+            return rc
+          },
+          _ => {},
+        };
+        //Actually start processing now
         let mut q1: Option<String>;
         let mut q2: Option<String>;
         let mut q3: Option<String>;
         match &s {
-          QueryUnit::Val(a) => { q1 = Some(a.clone()); },
-          QueryUnit::Var(_)
-          | QueryUnit::Anon
-          | QueryUnit::Ignore => { q1 = None; },
-        }
+          Val(a) => { q1 = Some(a.clone()); },
+          Var(_)
+          | Anon
+          | Ignore => { q1 = None; },
+        };
         match &p {
-          QueryUnit::Val(b) => { q2 = Some(b.clone()); },
-          QueryUnit::Var(_)
-          | QueryUnit::Anon
-          | QueryUnit::Ignore => { q2 = None; },
-        }
+          Val(b) => { q2 = Some(b.clone()); },
+          Var(_)
+          | Anon
+          | Ignore => { q2 = None; },
+        };
         match &o {
-          QueryUnit::Val(b) => { q3 = Some(b.clone()); },
-          QueryUnit::Var(_)
-          | QueryUnit::Anon
-          | QueryUnit::Ignore => { q3 = None; },
-        }
+          Val(b) => { q3 = Some(b.clone()); },
+          Var(_)
+          | Anon
+          | Ignore => { q3 = None; },
+        };
         let query_res = self.get_triple(&(q1, q2, q3));
         if query_res.len() > 0 {
           for i in 0..query_res.len() {
             let mut r = Result::new();
             match &s {
-              QueryUnit::Val(a) => { r.add_anon(ResultUnit::Value(a.to_string())); },
-              QueryUnit::Var(a) => { r.add_var(a.to_string(), query_res[i].0.clone()); },
-              QueryUnit::Anon   => { r.add_anon(ResultUnit::Value(query_res[i].0.clone())); },
-              QueryUnit::Ignore => { r.add_anon(ResultUnit::Ignore); },
+              Val(a) => { r.add_anon(ResultUnit::Value(a.to_string())); },
+              Var(a) => { r.add_var(a.to_string(), query_res[i].0.clone()); },
+              Anon   => { r.add_anon(ResultUnit::Value(query_res[i].0.clone())); },
+              Ignore => { r.add_anon(ResultUnit::Ignore); },
             }
             match &p {
-              QueryUnit::Val(b) => { r.add_anon(ResultUnit::Value(b.to_string())); },
-              QueryUnit::Var(b) => { r.add_var(b.to_string(), query_res[i].1.clone()); },
-              QueryUnit::Anon   => { r.add_anon(ResultUnit::Value(query_res[i].1.clone())); },
-              QueryUnit::Ignore => { r.add_anon(ResultUnit::Ignore); },
+              Val(b) => { r.add_anon(ResultUnit::Value(b.to_string())); },
+              Var(b) => { r.add_var(b.to_string(), query_res[i].1.clone()); },
+              Anon   => { r.add_anon(ResultUnit::Value(query_res[i].1.clone())); },
+              Ignore => { r.add_anon(ResultUnit::Ignore); },
             }
             match &o {
-              QueryUnit::Val(c) => { r.add_anon(ResultUnit::Value(c.to_string())); },
-              QueryUnit::Var(c) => { r.add_var(c.to_string(), query_res[i].2.clone()); },
-              QueryUnit::Anon   => { r.add_anon(ResultUnit::Value(query_res[i].2.clone())); },
-              QueryUnit::Ignore => { r.add_anon(ResultUnit::Ignore); },
+              Val(c) => { r.add_anon(ResultUnit::Value(c.to_string())); },
+              Var(c) => { r.add_var(c.to_string(), query_res[i].2.clone()); },
+              Anon   => { r.add_anon(ResultUnit::Value(query_res[i].2.clone())); },
+              Ignore => { r.add_anon(ResultUnit::Ignore); },
             }
             rc.results.push(r);
           }
         }
       }
-      Query::Chain(chain) => {},
+      // Query::Chain(chain) => {},
       _ => {},
     };
     rc
@@ -367,6 +460,7 @@ impl Graph {
 }
 
 fn t_order(t: Triple, curr_ordering: &Ordering) -> Triple {
+  use Ordering::{POS, OSP};
   match &curr_ordering {
     POS => {
       (t.2.to_string(),
@@ -383,3 +477,21 @@ fn t_order(t: Triple, curr_ordering: &Ordering) -> Triple {
     },
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

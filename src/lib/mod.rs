@@ -4,13 +4,14 @@ mod Results;
 
 pub use DataStores::Graph::Graph as Graph;
 pub use DataStores::TripleStore::TripleStore as TripleStore;
-pub use Queries::Query as DBQuery;
-pub use Queries::QueryUnit as DBQueryUnit;
-pub use Results::Result as DBResult;
-pub use Results::ResultUnit as DBResultUnit;
-pub use Results::ResultCollection as DBResultCollection;
+pub use Queries::Query as OjiQuery;
+pub use Queries::QueryUnit as OjiQueryUnit;
+pub use Results::Result as OjiResult;
+pub use Results::ResultUnit as OjiResultUnit;
+pub use Results::ResultCollection as OjiResultCollection;
 
 //Delcare common resources for nested modules
+#[derive(Clone, Debug)]
 pub enum Ordering {
   SPO,
   POS,

@@ -202,6 +202,13 @@ impl TripleStore {
           }
         }
       },
+      (None, Some(t)) => {
+        for (h, tails) in heads.iter() {
+          if let Some((t, _)) = tails.iter().find(|(val, _)| val == t) {
+            ret_v.push((h.to_string(), t.to_string()));
+          }
+        }
+      },
       (None, None) => {
         for (h, tails) in heads.iter() {
           for (t, _) in tails.iter() {
