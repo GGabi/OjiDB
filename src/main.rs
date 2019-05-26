@@ -32,12 +32,12 @@ fn main() {
            None,
            None,
            None];
-  let v = g.get(&q);
+  let v = g.get_chain(&q);
   println!("\nBasic Query:\n{:?}", q);
   println!("Basic Query Results:\n{:#?}", v);
 
   let q = OjiQuery::from_str(&["?", "$opinion", "JS"]);
-  let rc = g.get_trial(q);
+  let rc = g.get(q);
   println!("\nBetter Query:\n{:?}\nResults:", rc.query);
   for r in &rc {
     println!("{:?}", r);

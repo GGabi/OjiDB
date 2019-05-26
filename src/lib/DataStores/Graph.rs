@@ -50,7 +50,7 @@ impl Graph {
       curr_tail: 0,
     }
   }
-  pub fn get(&self, q: QueryChain) -> Vec<Vec<String>> {
+  pub fn get_chain(&self, q: QueryChain) -> Vec<Vec<String>> {
 
     /*  Traced algorithm:
      *  If query length 0: Return empty vec
@@ -325,7 +325,7 @@ impl Graph {
     };
     store.get_single(q)
   }
-  pub fn get_trial(&self, q: Query) -> ResultCollection {
+  pub fn get(&self, q: Query) -> ResultCollection {
     use QueryUnit::{Val, Var, Anon, Ignore};
     use Ordering::{S, P, O};
     let mut rc = ResultCollection::new();
@@ -372,10 +372,10 @@ impl Graph {
         //Filter out all the Ignores, call again with corrected query
         match (&h, &t) {
           (Ignore, _) => {
-            return self.get_trial(Query::Single(t, ord[1].clone()))
+            return self.get(Query::Single(t, ord[1].clone()))
           },
           (_, Ignore) => {
-            return self.get_trial(Query::Single(h, ord[0].clone()))
+            return self.get(Query::Single(h, ord[0].clone()))
           },
           (Ignore, Ignore) => {
             return rc
@@ -427,22 +427,22 @@ impl Graph {
         //Filter out all the Ignores, call again with corrected query
         match (&s, &p, &o) {
           (Ignore, _, _) => {
-            return self.get_trial(Query::Double(p, o, [P, O]))
+            return self.get(Query::Double(p, o, [P, O]))
           },
           (_, Ignore, _) => {
-            return self.get_trial(Query::Double(s, o, [S, O]))
+            return self.get(Query::Double(s, o, [S, O]))
           },
           (_, _, Ignore) => {
-            return self.get_trial(Query::Double(s, p, [S, P]))
+            return self.get(Query::Double(s, p, [S, P]))
           },
           (Ignore, Ignore, _) => {
-            return self.get_trial(Query::Single(o, O))
+            return self.get(Query::Single(o, O))
           },
           (Ignore, _, Ignore) => {
-            return self.get_trial(Query::Single(p, P))
+            return self.get(Query::Single(p, P))
           },
           (_, Ignore, Ignore) => {
-            return self.get_trial(Query::Single(s, S))
+            return self.get(Query::Single(s, S))
           },
           (Ignore, Ignore, Ignore) => {
             return rc
