@@ -1,6 +1,6 @@
 mod lib;
 
-use lib::{Graph, DBQuery};
+use lib::{Graph, OjiQuery};
 
 fn main() {
   let mut g = Graph::new();
@@ -14,6 +14,7 @@ fn main() {
   g.add(("Gabe".into(), "hates".into(), "Java".into()));
   g.add(("Gabe".into(), "hates".into(), "Pascal".into()));
   g.add(("Gabe".into(), "hates".into(), "Perl5".into()));
+  g.add(("Matt".into(), "likes".into(), "JS".into()));
   g.add(("Matt".into(), "likes".into(), "JS".into()));
   g.add(("James".into(), "likes".into(), "Java".into()));
   g.add(("James".into(), "likes".into(), "C#".into()));
@@ -31,18 +32,18 @@ fn main() {
            None,
            None,
            None];
-  let v = g.get(&q);
+  let v = g.get_chain(&q);
   println!("\nBasic Query:\n{:?}", q);
   println!("Basic Query Results:\n{:#?}", v);
 
-  let q = DBQuery::from_str(&["?", "$opinion", "$object"]).unwrap();
-  let rc = g.get_trial(q);
+  let q = OjiQuery::from_str(&["?", "$opinion", "JS"]);
+  let rc = g.get(q);
   println!("\nBetter Query:\n{:?}\nResults:", rc.query);
   for r in &rc {
     println!("{:?}", r);
   }
   println!("\nInterpretation using vars: (Someone $opinion $object)");
   for r in rc.iter() {
-    println!("Someone {} {}", r.get_var("opinion").unwrap(), r.get_var("object").unwrap());
+    println!("Someone {:?} JS", r.get_var("opinion").unwrap());
   }
 }

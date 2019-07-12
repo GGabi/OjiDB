@@ -22,6 +22,7 @@ OjiDB, pronounced "Oh-Jee DB", is (or will be) a Graph Database implemented in R
  - **Query Chains**: Support for queries of arbitrary length.
 
 ### What we don't have: (yet)
+ - **Fancy Interactions**: Structs and types that allow for more sophisticated interactions with OjiDB.
  - **O(1) Lookup**: Store everything in HashMaps and HashSets rather than Vecs, without affecting the custom re-allocation.
  - **Documents!**: A persistence model using Amazon ION. 
    - Using C and Rust's FFI.

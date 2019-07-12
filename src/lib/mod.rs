@@ -1,20 +1,27 @@
-pub mod DataStores;
-pub mod Queries;
-pub mod Results;
+mod DataStores;
+mod Queries;
+mod Results;
 
 pub use DataStores::Graph::Graph as Graph;
 pub use DataStores::TripleStore::TripleStore as TripleStore;
-pub use Queries::Query as DBQuery;
-pub use Queries::QueryUnit as DBQueryUnit;
-pub use Results::Result as DBResult;
-pub use Results::ResultUnit as DBResultUnit;
-pub use Results::ResultCollection as DBResultCollection;
+pub use Queries::Query as OjiQuery;
+pub use Queries::QueryUnit as OjiQueryUnit;
+pub use Results::Result as OjiResult;
+pub use Results::ResultUnit as OjiResultUnit;
+pub use Results::ResultCollection as OjiResultCollection;
 
 //Delcare common resources for nested modules
-pub enum TOrdering {
+#[derive(Clone, Debug)]
+pub enum Ordering {
   SPO,
   POS,
   OSP,
+  SP,
+  PO,
+  OS,
+  S,
+  P,
+  O,
 }
 
 type Triple = (String, String, String);
@@ -22,20 +29,3 @@ type QueryTriple = (Option<String>, Option<String>, Option<String>);
 type QueryChain<'a>  = &'a[Option<String>];
 type Double = (String, String);
 type QueryDouble = (Option<String>, Option<String>);
-fn t_order(t: Triple, curr_ordering: &TOrdering) -> Triple {
-  match &curr_ordering {
-    POS => {
-      (t.2.to_string(),
-       t.0.to_string(),
-       t.1.to_string())  
-    },
-    OSP => {
-      (t.1.to_string(),
-       t.2.to_string(),
-       t.0.to_string())
-    },
-    _ => {
-      t.clone()
-    },
-  }
-}
