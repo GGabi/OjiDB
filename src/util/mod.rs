@@ -1,7 +1,9 @@
 mod DataStores;
 mod Queries;
 mod Results;
+mod SPARQL;
 
+pub use SPARQL::Query::Query as SparQuery;
 pub use DataStores::Graph::Graph as Graph;
 pub use DataStores::TripleStore::TripleStore as TripleStore;
 pub use Queries::Query as OjiQuery;
