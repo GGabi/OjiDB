@@ -59,9 +59,13 @@ impl<'a> QueryFrom<'a> {
       vars: vars.to_vec(),
     }
   }
-  // pub fn compile() -> Query<'a> {
-  //   //todo
-  // }
+  pub fn compile() -> Query<'a> {
+    Query {
+      graph: self.graph,
+      vars: Vec::new(),
+      conds: vec::new(),
+    }
+  }
   // pub fn fetch() -> Result {
   //   //todo
   // }
@@ -78,9 +82,13 @@ impl<'a> QuerySelect<'a> {
       conds: conds.to_vec(),
     }
   }
-  // pub fn compile() -> Query<'a> {
-  //   //todo
-  // }
+  pub fn compile() -> Query<'a> {
+    Query {
+      graph: self.graph,
+      vars: self.vars,
+      conds: Vec::new(),
+    }
+  }
   // pub fn fetch() -> Result {
   //   //todo
   // }
