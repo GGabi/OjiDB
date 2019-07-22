@@ -5,6 +5,7 @@ mod SPARQL;
 
 pub use SPARQL::Query::Query as SparQuery;
 pub use DataStores::Graph::Graph as Graph;
+pub use DataStores::TripleStore::TripleStoreRefIterator as TripleRefIter;
 pub use DataStores::TripleStore::TripleStore as TripleStore;
 pub use Queries::Query as OjiQuery;
 pub use Queries::QueryUnit as OjiQueryUnit;

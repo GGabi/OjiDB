@@ -14,6 +14,7 @@ pub use util::OjiResultCollection as OjiResultCollection;
 mod tests {
 
   use super::util::Graph as Graph;
+  use super::util::TripleRefIter as TripleRefIter;
   use super::util::TripleStore as TripleStore;
 
   #[test]
@@ -26,7 +27,6 @@ mod tests {
       };
       assert_eq!(g, expected_g);
   }
-
   #[test]
   fn insert_triples() {
     let mut g = Graph::new();
@@ -44,7 +44,6 @@ mod tests {
     };
     assert_ne!(g, empty_g);
   }
-
   #[test]
   fn insert_dupes_across_triplestores() {
     let mut g = Graph::new();
@@ -88,5 +87,52 @@ mod tests {
       osp: expected_osp,
     };
     assert_eq!(g, expected_g);
+  }
+  #[test]
+  fn insert_then_remove() {
+    let mut g = Graph::new();
+    let t = ("Gabe".into(), "likes".into(), "Rust".into());
+    g.add(t.clone());
+    g.erase(&t);
+    let empty_g = Graph {
+      spo: TripleStore::new(),
+      pos: TripleStore::new(),
+      osp: TripleStore::new(),
+    };
+    assert_eq!(g, empty_g);
+  }
+  #[test]
+  fn remove_the_correct_triple() {
+    let mut g = Graph::new();
+    g.add(("Gabe".into(), "is".into(), "male".into()));
+    let t = ("Gabe".into(), "likes".into(), "Rust".into());
+    g.add(t.clone());
+    g.erase(&t);
+    let mut expected_g = Graph::new();
+    expected_g.add(("Gabe".into(), "is".into(), "male".into()));
+    assert_eq!(g, expected_g);
+  }
+  #[test]
+  fn replace_triple() {
+    let mut g = Graph::new();
+    let old_t = ("Gabe".into(), "is".into(), "male".into());
+    let new_t = ("Gabe".into(), "likes".into(), "Rust".into());
+    g.add(old_t.clone());
+    g.replace(&old_t, new_t.clone());
+    let mut expected_g = Graph::new();
+    expected_g.add(new_t.clone());
+    assert_eq!(g, expected_g);
+  }
+  #[test]
+  fn get_iterator() {
+    let mut g = Graph::new();
+    let g_iter = g.iter();
+    let expected_iter = TripleRefIter {
+      store: &g.spo,
+      curr_head: 0,
+      curr_mid: 0,
+      curr_tail: 0,
+    };
+    assert_eq!(g_iter, expected_iter);
   }
 }
