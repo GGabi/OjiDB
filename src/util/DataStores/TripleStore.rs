@@ -242,6 +242,17 @@ impl TripleStore {
     self.add(new_t);
   }
 }
+
+/* Std Traits */
+
+impl PartialEq for TripleStore {
+  fn eq(&self, other: &Self) -> bool {
+    self.0 == other.0
+  }
+}
+
+/* Iterators */
+
 impl IntoIterator for TripleStore {
   type Item = (String, String, String);
   type IntoIter = TripleStoreIterator;

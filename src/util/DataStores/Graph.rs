@@ -28,7 +28,7 @@ impl Graph {
     }
   }
   pub fn add(&mut self, (s, p, o): Triple) {
-    //Add should eventually consume the input
+    /* Add should eventually consume the input */
     self.spo.add((s.to_string(), p.to_string(), o.to_string()));
     self.pos.add((p.to_string(), o.to_string(), s.to_string()));
     self.osp.add((o, s, p));
@@ -520,6 +520,16 @@ fn t_order(t: Triple, curr_ordering: &Ordering) -> Triple {
     _ => {
       t.clone()
     },
+  }
+}
+
+/* Std Traits */
+
+impl PartialEq for Graph {
+  fn eq(&self, other: &Self) -> bool {
+    self.spo == other.spo
+    && self.pos == other.pos
+    && self.osp == other.osp 
   }
 }
 
