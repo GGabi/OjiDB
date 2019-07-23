@@ -11,11 +11,10 @@ pub use util::OjiResultUnit as OjiResultUnit;
 pub use util::OjiResultCollection as OjiResultCollection;
 
 #[cfg(test)]
-mod tests {
+mod graph_tests {
 
-  use super::util::Graph as Graph;
+  use super::*;
   use super::util::TripleRefIter as TripleRefIter;
-  use super::util::TripleStore as TripleStore;
 
   #[test]
   fn create_graph() {
@@ -136,3 +135,18 @@ mod tests {
     assert_eq!(g_iter, expected_iter);
   }
 }
+
+#[cfg(test)]
+mod query_tests {
+
+  use super::*;
+  use super::util::TripleRefIter as TripleRefIter;
+
+  #[test]
+  fn null_query() {
+    let q = OjiQuery::from(&[]);
+    let expected_q = OjiQuery::Null;
+    assert_eq!(q, expected_q);
+  }
+}
+

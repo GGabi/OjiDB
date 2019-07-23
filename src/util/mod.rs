@@ -14,7 +14,7 @@ pub use Results::ResultUnit as OjiResultUnit;
 pub use Results::ResultCollection as OjiResultCollection;
 
 //Delcare common resources for nested modules
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Ordering {
   SPO,
   POS,
