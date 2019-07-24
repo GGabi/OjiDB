@@ -36,85 +36,13 @@ Struct Query {
 use super::{
   super::{
     DataStores::Graph::Graph,
-    Ordering, Triple, Double, QueryDouble, QueryTriple, QueryChain,
-    Results::{Result, ResultUnit, ResultCollection}
+    Ordering, Triple, Double, QueryDouble, QueryTriple, QueryChain
   }
 };
+use std::collections::HashMap;
 
-pub struct QueryBase;
-impl QueryBase {
-  pub fn from(g: &Graph) -> QueryFrom {
-    QueryFrom {
-      graph: g,
-    }
-  }
-}
-pub struct QueryFrom<'a> {
-  graph: &'a Graph,
-}
-impl<'a> QueryFrom<'a> {
-  pub fn select(self, vars: &'a[String]) -> QuerySelect<'a> {
-    QuerySelect {
-      graph: self.graph,
-      vars: vars.to_vec(),
-    }
-  }
-  pub fn compile(self) -> Query<'a> {
-    Query {
-      graph: self.graph,
-      vars: Vec::new(),
-      conds: Vec::new(),
-    }
-  }
-  // pub fn fetch() -> Result {
-  //   //todo
-  // }
-}
-pub struct QuerySelect<'a> {
-  graph: &'a Graph,
-  vars: Vec<String>,
-}
-impl<'a> QuerySelect<'a> {
-  pub fn r#where(self, conds: &[(String, String, String)]) -> Query<'a> {
-    Query {
-      graph: self.graph,
-      vars: self.vars,
-      conds: conds.to_vec(),
-    }
-  }
-  pub fn compile(self) -> Query<'a> {
-    Query {
-      graph: self.graph,
-      vars: self.vars,
-      conds: Vec::new(),
-    }
-  }
-  // pub fn fetch() -> Result {
-  //   //todo
-  // }
-}
-pub struct Query<'a> {
-  graph: &'a Graph,
-  vars: Vec<String>,
-  conds: Vec<(String, String, String)>,
-}
-impl<'a> Query<'a> {
-  pub fn new() -> QueryBase {
-    QueryBase
-  }
-  // pub fn fetch() -> Result {
-  //   //todo
-  // }
-}
-
-/* Oji Query */
-
-/*************************
-*
-* QueryUnit
-*
-*************************/
-#[derive(Clone, Debug)]
+/* Query Unit */
+#[derive(Clone, Debug, PartialEq)]
 pub enum QueryUnit {
   Val(String),
   Var(String),
@@ -134,88 +62,196 @@ impl QueryUnit {
   }
 }
 
-/*************************
-*
-* Query
-*
-*************************/
-// #[derive(Clone, Debug)]
-// pub enum Query {
-//   Null,
-//   Single(QueryUnit, Ordering),
-//   Double(QueryUnit, QueryUnit, [Ordering; 2]),
-//   Triple(QueryUnit, QueryUnit, QueryUnit),
-//   // Chain(Vec<QueryUnit>, Vec<Ordering>),
-// }
-// //Builders
-// impl Query {
-//   fn make_single(val: QueryUnit, ord: Ordering) -> Self {
-//     if let QueryUnit::Nil = val {
-//       return Query::Null
-//     }
-//     Query::Single(val, ord)
-//   }
-//   fn make_double(head: QueryUnit, tail: QueryUnit, ord: [Ordering; 2]) -> Self {
-//     match (&head, &tail) {
-//       (QueryUnit::Nil, _) => Self::make_single(tail, ord[1].clone()),
-//       (_, QueryUnit::Nil) => Self::make_single(head, ord[0].clone()),
-//       _ => Query::Double(head, tail, ord),
-//     }
-//   }
-//   fn make_triple(head: QueryUnit, mid: QueryUnit, tail: QueryUnit) -> Self {
-//     use Ordering::{S, P, O};
-//     match (&head, &mid, &tail) {
-//       (QueryUnit::Nil, _, _) => Self::make_double(mid, tail, [P, O]),
-//       (_, QueryUnit::Nil, _) => Self::make_double(head, tail, [S, O]),
-//       (_, _, QueryUnit::Nil) => Self::make_double(head, mid, [S, P]),
-//       _ => Query::Triple(head, mid, tail),
-//     }
-//   }
-  // fn make_chain(chain: &[QueryUnit]) -> Self {
-  //   let filtered_chain: Vec<&QueryUnit> = chain.into_iter()
-  //                                             .filter(|x| if let QueryUnit::Ignore = x {return true} else {return false})
-  //                                             .collect();
-  //   match filtered_chain.len() {
-  //     0 => Query::Null,
-  //     1 => Self::make_single(filtered_chain[0].clone()),
-  //     2 => Self::make_double(filtered_chain[0].clone(), filtered_chain[1].clone()),
-  //     3 => Self::make_triple(filtered_chain[0].clone(), filtered_chain[1].clone(), filtered_chain[2].clone()),
-  //     _ => Query::Chain(filtered_chain.into_iter().map(|x| x.clone()).collect()),
+/* Result */
+#[derive(Clone, Debug, PartialEq)]
+pub enum ResultUnit {
+  Value(String),
+  Ignore,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub struct Result {
+  pub values: Vec<ResultUnit>,
+  pub var_map: HashMap<String, usize>,
+}
+impl Result {
+  pub fn new() -> Self {
+    Result {
+      values: Vec::new(),
+      var_map: HashMap::new(),
+    }
+  }
+  pub fn add_anon(&mut self, val: ResultUnit) {
+    self.values.push(val);
+  }
+  pub fn add_var(&mut self, var: String, val: String) {
+    self.values.push(ResultUnit::Value(val));
+    self.var_map.insert(var, self.values.len()-1);
+  }
+  pub fn get_var(&self, var: &str) -> Option<String> {
+    match self.var_map.get(var) {
+      Some(&pos) => {
+        match self.values[pos].clone() {
+          ResultUnit::Value(val) => Some(val),
+          _ => None,
+        }
+      },
+      None => None,
+    }
+  }
+}
+#[derive(Clone, Debug)]
+pub struct ResultCollection {
+  pub results: Vec<Result>,
+  // pub query: Query<'a>,
+}
+impl ResultCollection {
+  pub fn new() -> Self {
+    ResultCollection {
+      results: Vec::new(),
+      // query: Query {
+      //   graph: &Graph::new(),
+      //   vars: Vec::new(),
+      //   conds: Vec::new(),
+      // },
+    }
+  }
+  // pub fn from(q: Query, rs: Vec<Result>) -> Self {
+  //   ResultCollection {
+  //     results: rs,
+  //     query: q,
   //   }
   // }
-// }
-// impl Query {
-//   pub fn from(vals: &[QueryUnit]) -> Self {
-//     use Ordering::{S, P, O};
-//     match vals.len() {
-//       0 => Query::Null,
-//       1 => Self::make_single(vals[0].clone(), S),
-//       2 => Self::make_double(vals[0].clone(), vals[1].clone(), [S, P]),
-//       3 => Self::make_triple(vals[0].clone(), vals[1].clone(), vals[2].clone()),
-//       _ => Query::Null,
-//       // _ => Self::make_chain(vals),
-//     }
-//   }
-//   pub fn from_str(vals: &[&str]) -> Self {
-//     use Ordering::{S, P, O};
-//     match vals.len() {
-//       0 => Query::Null,
-//       1 => Self::make_single(QueryUnit::from(vals[0]), S),
-//       2 => Self::make_double(QueryUnit::from(vals[0]),
-//                               QueryUnit::from(vals[1]),
-//                               [S, P]),
-//       3 => Self::make_triple(QueryUnit::from(vals[0]),
-//                               QueryUnit::from(vals[1]),
-//                               QueryUnit::from(vals[2])
-//                               ),
-//       _ => Query::Null,
-//       // _ => {
-//       //   let mut chain: Vec<QueryUnit> = Vec::new();
-//       //   for v in vals {
-//       //     chain.push(QueryUnit::from(v));
-//       //   }
-//       //   Self::make_chain(&chain)
-//       // },
-//     }
-//   }
-// }
+}
+
+/* Query */
+#[derive(Clone, Debug)]
+pub struct Query<'a> {
+  graph: &'a Graph,
+  vars: Vec<QueryUnit>,
+  conds: Vec<(QueryUnit, QueryUnit, QueryUnit)>,
+}
+impl<'a> Query<'a> {
+  pub fn new() -> QueryBase {
+    QueryBase
+  }
+  pub fn fetch(self) -> ResultCollection {
+    use QueryUnit::{Val, Var, Nil};
+    let mut rc = ResultCollection::new();
+    /* Actually start processing now */
+    let mut q1: Option<String>;
+    let mut q2: Option<String>;
+    let mut q3: Option<String>;
+    match &self.conds[0].0 {
+      Val(a) => { q1 = Some(a.clone()); },
+      Var(_) => { q1 = None; },
+      Nil => { q1 = None; },
+    };
+    match &self.conds[0].1 {
+      Val(b) => { q2 = Some(b.clone()); },
+      Var(_) => { q2 = None; },
+      Nil => { q2 = None; },
+    };
+    match &self.conds[0].2 {
+      Val(b) => { q3 = Some(b.clone()); },
+      Var(_) => { q3 = None; },
+      Nil => { q3 = None; },
+    };
+    let query_res = self.graph.get_triple(&(q1, q2, q3));
+    if query_res.len() > 0 {
+      for i in 0..query_res.len() {
+        let mut r = Result::new();
+        match &self.conds[0].0 {
+          Val(a) => { r.add_anon(ResultUnit::Value(a.to_string())); },
+          Var(a) => { r.add_var(a.to_string(), query_res[i].0.clone()); },
+          Nil => { r.add_anon(ResultUnit::Ignore); },
+        }
+        match &self.conds[0].1 {
+          Val(b) => { r.add_anon(ResultUnit::Value(b.to_string())); },
+          Var(b) => { r.add_var(b.to_string(), query_res[i].1.clone()); },
+          Nil => { r.add_anon(ResultUnit::Ignore); },
+        }
+        match &self.conds[0].2 {
+          Val(c) => { r.add_anon(ResultUnit::Value(c.to_string())); },
+          Var(c) => { r.add_var(c.to_string(), query_res[i].2.clone()); },
+          Nil    => { r.add_anon(ResultUnit::Ignore); },
+        }
+        rc.results.push(r);
+      }
+    }
+    rc
+  }
+}
+
+/* Query Builders */
+pub struct QueryBase;
+impl QueryBase {
+  pub fn from(self, g: &Graph) -> QueryFrom {
+    QueryFrom {
+      graph: g,
+    }
+  }
+}
+pub struct QueryFrom<'a> {
+  graph: &'a Graph,
+}
+impl<'a> QueryFrom<'a> {
+  pub fn select(self, vars: &'a[&str]) -> QuerySelect<'a> {
+    let qunits: Vec<QueryUnit> = vars.to_vec()
+                     .into_iter()
+                     .map(|x| QueryUnit::from(x))
+                     .collect();
+    QuerySelect {
+      graph: self.graph,
+      vars: qunits,
+    }
+  }
+  pub fn compile(self) -> Query<'a> {
+    Query {
+      graph: self.graph,
+      vars: Vec::new(),
+      conds: Vec::new(),
+    }
+  }
+  // pub fn fetch() -> Result {
+  //   //todo
+  // }
+}
+pub struct QuerySelect<'a> {
+  graph: &'a Graph,
+  vars: Vec<QueryUnit>,
+}
+impl<'a> QuerySelect<'a> {
+  pub fn filter(self, conds: &[(&str, &str, &str)]) -> Query<'a> {
+    let qconds: Vec<(QueryUnit, QueryUnit, QueryUnit)>
+      = conds.to_vec()
+             .into_iter()
+             .map(|(x, y, z)| (QueryUnit::from(x), QueryUnit::from(y), QueryUnit::from(z)))
+             .filter(|(x, y, z)| {
+               for a in [x, y, z].iter() {
+                 if let QueryUnit::Var(_) = a {
+                   if !self.vars.contains(a) {
+                     panic!("Undeclared variable in query!");
+                   }
+                 }
+               }
+               true
+             })
+             .collect();
+    Query {
+      graph: self.graph,
+      vars: self.vars,
+      conds: qconds,
+    }
+  }
+  pub fn compile(self) -> Query<'a> {
+    Query {
+      graph: self.graph,
+      vars: self.vars,
+      conds: Vec::new(),
+    }
+  }
+  // pub fn fetch() -> Result {
+  //   //todo
+  // }
+}
+

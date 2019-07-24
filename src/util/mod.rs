@@ -4,6 +4,9 @@ mod Results;
 mod SPARQL;
 
 pub use SPARQL::Query::Query as SparQuery;
+pub use SPARQL::Query::QueryUnit as SparQueryUnit;
+pub use SPARQL::Query::Result as SparResult;
+pub use SPARQL::Query::ResultCollection as SparResultCollection;
 pub use DataStores::Graph::Graph as Graph;
 pub use DataStores::TripleStore::TripleStoreRefIterator as TripleRefIter;
 pub use DataStores::TripleStore::TripleStore as TripleStore;

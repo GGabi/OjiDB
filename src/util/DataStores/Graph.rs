@@ -229,7 +229,7 @@ impl Graph {
 }
 
 impl Graph {
-  fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
+  pub fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
     match qt {
       (Some(s), Some(p), Some(o)) => {
         self.spo.get_triple(&(
