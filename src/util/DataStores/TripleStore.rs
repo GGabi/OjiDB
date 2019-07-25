@@ -242,6 +242,17 @@ impl TripleStore {
     self.add(new_t);
   }
 }
+
+/* Std Traits */
+
+impl PartialEq for TripleStore {
+  fn eq(&self, other: &Self) -> bool {
+    self.0 == other.0
+  }
+}
+
+/* Iterators */
+
 impl IntoIterator for TripleStore {
   type Item = (String, String, String);
   type IntoIter = TripleStoreIterator;
@@ -266,6 +277,7 @@ impl<'a> IntoIterator for &'a TripleStore {
     }
   }
 }
+#[derive(Clone, Debug)]
 pub struct TripleStoreIterator {
   store: TripleStore,
   curr_head: usize,
@@ -301,6 +313,7 @@ impl Iterator for TripleStoreIterator {
     return Some((head, mid, tail))
   }
 } 
+#[derive(Clone, Debug)]
 pub struct TripleStoreRefIterator<'a> {
   pub store: &'a TripleStore,
   pub curr_head: usize,
@@ -336,3 +349,14 @@ impl<'a> Iterator for TripleStoreRefIterator<'a> {
     return Some((head, mid, tail))
   }
 } 
+
+/* Iterator Std Traits */
+
+impl<'a> PartialEq for TripleStoreRefIterator<'a> {
+  fn eq(&self, other: &Self) -> bool {
+    self.store == other.store
+    && self.curr_head == other.curr_head
+    && self.curr_mid == other.curr_mid
+    && self.curr_tail == other.curr_tail
+  }
+}

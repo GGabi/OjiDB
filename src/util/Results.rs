@@ -7,15 +7,15 @@ use super::Queries::{Query, QueryUnit};
 * Result
 *
 *************************/
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ResultUnit {
   Value(String),
   Ignore,
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Result {
   pub values: Vec<ResultUnit>,
-  var_map: HashMap<String, usize>,
+  pub var_map: HashMap<String, usize>,
 }
 impl IntoIterator for Result {
   type Item = ResultUnit;

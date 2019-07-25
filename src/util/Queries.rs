@@ -28,6 +28,47 @@ impl QueryUnit {
   }
 }
 
+/* Std Traits */
+impl PartialEq for QueryUnit {
+  fn eq(&self, other: &Self) -> bool {
+    use QueryUnit::*;
+    match self {
+      Val(a) => {
+        if let Val(b) = other {
+          return a == b
+        }
+        else {
+          return false
+        }
+      },
+      Var(a) => {
+        if let Var(b) = other {
+          return a == b
+        }
+        else {
+          return false
+        }
+      },
+      Anon => {
+        if let Anon = other {
+          return true
+        }
+        else {
+          return false
+        }
+      },
+      Ignore => {
+        if let Ignore = other {
+          return true
+        }
+        else {
+          return false
+        }
+      },
+    }
+  }
+}
+
 /*************************
 *
 * Query
@@ -110,6 +151,39 @@ impl Query {
       //   }
       //   Self::make_chain(&chain)
       // },
+    }
+  }
+}
+
+/* Std Traits */
+impl PartialEq for Query {
+  fn eq(&self, other: &Self) -> bool {
+    use Query::*;
+    match self {
+      Null => {
+        if let Null = other {
+          return true
+        }
+        false
+      },
+      Single(a, ord_a) => {
+        if let Single(x, ord_x) = other {
+          return a == x && ord_a == ord_x
+        }
+        false
+      },
+      Double(a, b, ord_a) => {
+        if let Double(x, y, ord_x) = other {
+          return a == x && b == y && ord_a == ord_x
+        }
+        false
+      },
+      Triple(a, b, c, ord_a) => {
+        if let Triple(x, y, z, ord_x) = other {
+          return a == x && b == y && c == z && ord_a == ord_x
+        }
+        false
+      },
     }
   }
 }
