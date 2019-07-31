@@ -10,7 +10,6 @@ pub use util::OjiQueryUnit as OjiQueryUnit;
 pub use util::OjiResult as OjiResult;
 pub use util::OjiResultUnit as OjiResultUnit;
 pub use util::OjiResultCollection as OjiResultCollection;
-pub use util::SparQuery as SparQuery;
 
 #[cfg(test)]
 mod manual_tests {
@@ -21,11 +20,11 @@ mod manual_tests {
     g.add(("Gabe".into(), "is".into(), "male".into()));
     g.add(("James".into(), "is".into(), "cool".into()));
     g.add(("Gabe".into(), "is".into(), "cool".into()));
-    let sq = SparQuery::new().from(&g)
-                             .select(&["$name"])
-                             .filter(&[("$name", "is", "cool")])
-                             .fetch();
-    println!("{:#?}", sq);
+    let q = OjiQuery::new().from(&g)
+                           .select(&["$name"])
+                           .filter(&[("$name", "is", "cool")])
+                           .fetch();
+    println!("{:#?}", q);
   }
 }
 
@@ -156,47 +155,8 @@ mod graph_basic {
 }
 
 #[cfg(test)]
-mod query_create {
-
-  use super::*;
-  use super::util::Ordering as OjiOrder;
-
-  #[test]
-  fn null_query() {
-    let q = OjiQuery::from(&[]);
-    let expected_q = OjiQuery::Null;
-    assert_eq!(q, expected_q);
-  }
-  #[test]
-  fn single_query() {
-    let q = OjiQuery::from_str(&["Gabe"]);
-    let expected_q = OjiQuery::Single(OjiQueryUnit::Val(String::from("Gabe")), OjiOrder::S);
-    assert_eq!(q, expected_q);
-  }
-  #[test]
-  fn double_query() {
-    let q = OjiQuery::from_str(&["Gabe", "likes"]);
-    let expected_q = OjiQuery::Double(OjiQueryUnit::Val(String::from("Gabe")),
-                                      OjiQueryUnit::Val(String::from("likes")),
-                                      [OjiOrder::S, OjiOrder::P]);
-    assert_eq!(q, expected_q);
-  }
-  #[test]
-  fn triple_query() {
-    let q = OjiQuery::from_str(&["Gabe", "likes", "Rust"]);
-    let expected_q = OjiQuery::Triple(OjiQueryUnit::Val(String::from("Gabe")),
-                                      OjiQueryUnit::Val(String::from("likes")),
-                                      OjiQueryUnit::Val(String::from("Rust")),
-                                      [OjiOrder::S, OjiOrder::P, OjiOrder::O]);
-    assert_eq!(q, expected_q);
-  }
-}
-
-#[cfg(test)]
 mod result_create {
   use super::*;
-  // use super::util::Ordering as OjiOrder;
-  // use super::util::TripleRefIter as TripleRefIter;
   #[test]
   fn null_result() {
     use std::collections::HashMap;
@@ -208,11 +168,11 @@ mod result_create {
     assert_eq!(r, expected_r);
   }
   #[test]
-  fn add_anon() {
+  fn add_val() {
     use std::collections::HashMap;
     let mut r = OjiResult::new();
-    r.add_anon(OjiResultUnit::Value(String::from("Gabe")));
-    let v = vec!(OjiResultUnit::Value(String::from("Gabe")));
+    r.add_val(OjiResultUnit::Val(String::from("Gabe")));
+    let v = vec!(OjiResultUnit::Val(String::from("Gabe")));
     let expected_r = OjiResult {
       values: v,
       var_map: HashMap::new(),
@@ -224,7 +184,7 @@ mod result_create {
     use std::collections::HashMap;
     let mut r = OjiResult::new();
     r.add_var("name".into(), "Gabe".into());
-    let v = vec!(OjiResultUnit::Value(String::from("Gabe")));
+    let v = vec!(OjiResultUnit::Val(String::from("Gabe")));
     let mut h: HashMap<String, usize> = HashMap::new();
     h.insert(String::from("name"), 0);
     let expected_r = OjiResult {
@@ -236,7 +196,7 @@ mod result_create {
   #[test]
   fn get_var() {
     use std::collections::HashMap;
-    let v = vec!(OjiResultUnit::Value(String::from("Gabe")));
+    let v = vec!(OjiResultUnit::Val(String::from("Gabe")));
     let mut h: HashMap<String, usize> = HashMap::new();
     h.insert(String::from("name"), 0);
     let r = OjiResult {

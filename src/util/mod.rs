@@ -1,24 +1,19 @@
 #![allow(non_snake_case)]
 
 mod DataStores;
-mod Queries;
-mod Results;
 mod SPARQL;
 
-pub use SPARQL::Query::Query as SparQuery;
-pub use SPARQL::Query::QueryUnit as SparQueryUnit;
-pub use SPARQL::Query::Result as SparResult;
-pub use SPARQL::Query::ResultCollection as SparResultCollection;
+pub use SPARQL::Query::Query as OjiQuery;
+pub use SPARQL::Query::QueryUnit as OjiQueryUnit;
+pub use SPARQL::Result::ResultUnit as OjiResultUnit;
+pub use SPARQL::Result::Result as OjiResult;
+pub use SPARQL::Result::ResultCollection as OjiResultCollection;
 pub use DataStores::Graph::Graph as Graph;
 pub use DataStores::TripleStore::TripleStoreRefIterator as TripleRefIter;
 pub use DataStores::TripleStore::TripleStore as TripleStore;
-pub use Queries::Query as OjiQuery;
-pub use Queries::QueryUnit as OjiQueryUnit;
-pub use Results::Result as OjiResult;
-pub use Results::ResultUnit as OjiResultUnit;
-pub use Results::ResultCollection as OjiResultCollection;
 
 //Delcare common resources for nested modules
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Ordering {
   SPO,
@@ -31,8 +26,3 @@ pub enum Ordering {
   P,
   O,
 }
-
-type Triple = (String, String, String);
-type QueryTriple = (Option<String>, Option<String>, Option<String>);
-type Double = (String, String);
-type QueryDouble = (Option<String>, Option<String>);
