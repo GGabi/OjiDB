@@ -1,44 +1,4 @@
-/*
-SPARQL Query Builder Pattern:
-let results = Query.from().select().where(){.fetch() | .compile()};
-
-from(): Takes a single graph
-select(): Takes either the Enum “All” or a slice of variable names
-where(): Only valid for queries with variable names, not All
-        Takes a slice of triples that take either a variable name from select() or a string literal
-compile(): Converts a Query builder to the appropriate finalised Query struct and returns it
-fetch(): Compile the Query, sends it off and returns the result from the database
-
-Struct QueryBase {
-  fn from() -> QueryFrom;
-}
-Struct QueryFrom {
-  fn select() -> QuerySelect;
-  fn compile() -> Query;
-  fn fetch() -> DBResult;
-  datasource: Graph;
-}
-Struct QuerySelect {
-  fn where() -> Query;
-  fn compile() -> Query;
-  fn fetch() -> DBResult;
-  datasource: Graph;
-  variables: Vec<variables>
-}
-Struct Query {
-  fn fetch() -> DBResult;
-  datasource: Graph;
-  variables: Vec<String>;
-  conditions: Vec<(String, String, String)>;
-}
-*/
-
-use super::{
-  super::{
-    DataStores::Graph::Graph,
-    Ordering, Triple, Double, QueryDouble, QueryTriple, QueryChain
-  }
-};
+use super::super::DataStores::Graph::Graph;
 use std::collections::HashMap;
 
 /* Query Unit */
@@ -48,85 +8,20 @@ pub enum QueryUnit {
   Var(String),
   Nil,
 }
-impl QueryUnit {
-  pub fn from(s: &str) -> Self {
-    if let Some(c) = s.chars().next() {
-      if c == '$' {
-        return QueryUnit::Var(s[1..].into())
-      }
-      else {
-        return QueryUnit::Val(s.into())
-      }
-    }
-    QueryUnit::Nil
-  }
-}
-
-/* Result */
-#[derive(Clone, Debug, PartialEq)]
-pub enum ResultUnit {
-  Value(String),
-  Ignore,
-}
-#[derive(Clone, Debug, PartialEq)]
-pub struct Result {
-  pub values: Vec<ResultUnit>,
-  pub var_map: HashMap<String, usize>,
-}
-impl Result {
-  pub fn new() -> Self {
-    Result {
-      values: Vec::new(),
-      var_map: HashMap::new(),
+impl<'a> From<&'a str> for QueryUnit {
+  fn from(s: &str) -> Self {
+    match s.chars().next() {
+      Some('$') => QueryUnit::Var(s[1..].into()),
+      Some(_)   => QueryUnit::Val(s.into()),
+      None      => QueryUnit::Nil,
     }
   }
-  pub fn add_anon(&mut self, val: ResultUnit) {
-    self.values.push(val);
-  }
-  pub fn add_var(&mut self, var: String, val: String) {
-    self.values.push(ResultUnit::Value(val));
-    self.var_map.insert(var, self.values.len()-1);
-  }
-  pub fn get_var(&self, var: &str) -> Option<String> {
-    match self.var_map.get(var) {
-      Some(&pos) => {
-        match self.values[pos].clone() {
-          ResultUnit::Value(val) => Some(val),
-          _ => None,
-        }
-      },
-      None => None,
-    }
-  }
-}
-#[derive(Clone, Debug)]
-pub struct ResultCollection {
-  pub results: Vec<Result>,
-  // pub query: Query<'a>,
-}
-impl ResultCollection {
-  pub fn new() -> Self {
-    ResultCollection {
-      results: Vec::new(),
-      // query: Query {
-      //   graph: &Graph::new(),
-      //   vars: Vec::new(),
-      //   conds: Vec::new(),
-      // },
-    }
-  }
-  // pub fn from(q: Query, rs: Vec<Result>) -> Self {
-  //   ResultCollection {
-  //     results: rs,
-  //     query: q,
-  //   }
-  // }
 }
 
 /* Query */
 #[derive(Clone, Debug)]
 pub struct Query<'a> {
-  graph: &'a Graph,
+  graph: Option<&'a Graph>,
   vars: Vec<QueryUnit>,
   conds: Vec<(QueryUnit, QueryUnit, QueryUnit)>,
 }
@@ -134,9 +29,12 @@ impl<'a> Query<'a> {
   pub fn new() -> QueryBase {
     QueryBase
   }
-  pub fn fetch(self) -> ResultCollection {
+  pub fn fetch(self) -> ResultCollection<'a> {
     use QueryUnit::{Val, Var, Nil};
     let mut rc = ResultCollection::new();
+    if let None = self.graph {
+      return rc
+    }
     /* Actually start processing now */
     let mut q1: Option<String>;
     let mut q2: Option<String>;
@@ -156,24 +54,24 @@ impl<'a> Query<'a> {
       Var(_) => { q3 = None; },
       Nil => { q3 = None; },
     };
-    let query_res = self.graph.get_triple(&(q1, q2, q3));
+    let query_res = self.graph.unwrap().get_triple(&(q1, q2, q3));
     if query_res.len() > 0 {
       for i in 0..query_res.len() {
         let mut r = Result::new();
         match &self.conds[0].0 {
-          Val(a) => { r.add_anon(ResultUnit::Value(a.to_string())); },
+          Val(a) => { r.add_val(ResultUnit::Val(a.to_string())); },
           Var(a) => { r.add_var(a.to_string(), query_res[i].0.clone()); },
-          Nil => { r.add_anon(ResultUnit::Ignore); },
+          Nil => { r.add_val(ResultUnit::Nil); },
         }
         match &self.conds[0].1 {
-          Val(b) => { r.add_anon(ResultUnit::Value(b.to_string())); },
+          Val(b) => { r.add_val(ResultUnit::Val(b.to_string())); },
           Var(b) => { r.add_var(b.to_string(), query_res[i].1.clone()); },
-          Nil => { r.add_anon(ResultUnit::Ignore); },
+          Nil => { r.add_val(ResultUnit::Nil); },
         }
         match &self.conds[0].2 {
-          Val(c) => { r.add_anon(ResultUnit::Value(c.to_string())); },
+          Val(c) => { r.add_val(ResultUnit::Val(c.to_string())); },
           Var(c) => { r.add_var(c.to_string(), query_res[i].2.clone()); },
-          Nil    => { r.add_anon(ResultUnit::Ignore); },
+          Nil    => { r.add_val(ResultUnit::Nil); },
         }
         rc.results.push(r);
       }
@@ -184,11 +82,21 @@ impl<'a> Query<'a> {
 
 /* Query Builders */
 pub struct QueryBase;
-impl QueryBase {
+impl<'a> QueryBase {
   pub fn from(self, g: &Graph) -> QueryFrom {
     QueryFrom {
       graph: g,
     }
+  }
+  pub fn compile(self) -> Query<'a> {
+    Query {
+      graph: None,
+      vars: Vec::new(),
+      conds: Vec::new(),
+    }
+  }
+  pub fn fetch(self) -> ResultCollection<'a> {
+    self.compile().fetch()
   }
 }
 pub struct QueryFrom<'a> {
@@ -207,14 +115,14 @@ impl<'a> QueryFrom<'a> {
   }
   pub fn compile(self) -> Query<'a> {
     Query {
-      graph: self.graph,
+      graph: Some(self.graph),
       vars: Vec::new(),
       conds: Vec::new(),
     }
   }
-  // pub fn fetch() -> Result {
-  //   //todo
-  // }
+  pub fn fetch(self) -> ResultCollection<'a> {
+    self.compile().fetch()
+  }
 }
 pub struct QuerySelect<'a> {
   graph: &'a Graph,
@@ -238,20 +146,90 @@ impl<'a> QuerySelect<'a> {
              })
              .collect();
     Query {
-      graph: self.graph,
+      graph: Some(self.graph),
       vars: self.vars,
       conds: qconds,
     }
   }
   pub fn compile(self) -> Query<'a> {
     Query {
-      graph: self.graph,
+      graph: Some(self.graph),
       vars: self.vars,
       conds: Vec::new(),
     }
   }
-  // pub fn fetch() -> Result {
-  //   //todo
-  // }
+  pub fn fetch(self) -> ResultCollection<'a> {
+    self.compile().fetch()
+  }
 }
 
+/* ResultUnit */
+#[derive(Clone, Debug, PartialEq)]
+pub enum ResultUnit {
+  Val(String),
+  Nil,
+}
+impl<'a> From<&'a str> for ResultUnit {
+  fn from(s: &str) -> Self {
+    match s.chars().next() {
+      Some(_) => ResultUnit::Val(s.into()),
+      None    => ResultUnit::Nil
+    }
+  }
+}
+#[derive(Clone, Debug, PartialEq)]
+pub struct Result {
+  pub values: Vec<ResultUnit>,
+  pub var_map: HashMap<String, usize>,
+}
+impl Result {
+  pub fn new() -> Self {
+    Result {
+      values: Vec::new(),
+      var_map: HashMap::new(),
+    }
+  }
+  pub fn add_val(&mut self, val: ResultUnit) {
+    self.values.push(val);
+  }
+  pub fn add_var(&mut self, var: String, val: String) {
+    self.values.push(ResultUnit::Val(val));
+    self.var_map.insert(var, self.values.len()-1);
+  }
+  pub fn get_val(&self, pos: usize) -> Option<String> {
+    if self.values.len() <= pos {
+      match self.values[pos] {
+        ResultUnit::Val(a) => return Some(a.clone),
+        _ => return None
+      };
+    }
+    None
+  }
+  pub fn get_var(&self, var: &str) -> Option<String> {
+    match self.var_map.get(var) {
+      Some(&pos) => {
+        match self.values[pos].clone() {
+          ResultUnit::Val(val) => Some(val),
+          _ => None,
+        }
+      },
+      None => None,
+    }
+  }
+}
+#[derive(Clone, Debug)]
+pub struct ResultCollection<'a> {
+  pub results: Vec<Result>,
+  pub query: Query<'a>,
+}
+impl<'a> ResultCollection<'a> {
+  pub fn new() -> Self {
+    ResultCollection {
+      results: Vec::new(),
+      query: Query::new().compile(),
+    }
+  }
+  // pub fn from(q: Query, rs: Vec<Result>) -> Self {
+  //   TODO
+  // }
+}

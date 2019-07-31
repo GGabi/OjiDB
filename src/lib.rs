@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 
 /* Exports */
 mod util;
@@ -142,7 +143,7 @@ mod graph_basic {
   }
   #[test]
   fn get_iterator() {
-    let mut g = Graph::new();
+    let g = Graph::new();
     let g_iter = g.iter();
     let expected_iter = TripleRefIter {
       store: &g.spo,
@@ -159,7 +160,6 @@ mod query_create {
 
   use super::*;
   use super::util::Ordering as OjiOrder;
-  use super::util::TripleRefIter as TripleRefIter;
 
   #[test]
   fn null_query() {
@@ -219,6 +219,7 @@ mod result_create {
     };
     assert_eq!(r, expected_r);
   }
+  #[test]
   fn add_var() {
     use std::collections::HashMap;
     let mut r = OjiResult::new();

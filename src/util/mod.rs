@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 mod DataStores;
 mod Queries;
 mod Results;
@@ -32,6 +34,5 @@ pub enum Ordering {
 
 type Triple = (String, String, String);
 type QueryTriple = (Option<String>, Option<String>, Option<String>);
-type QueryChain<'a>  = &'a[Option<String>];
 type Double = (String, String);
 type QueryDouble = (Option<String>, Option<String>);

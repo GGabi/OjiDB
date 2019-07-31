@@ -1,6 +1,6 @@
 
 use std::collections::HashMap;
-use super::Queries::{Query, QueryUnit};
+use super::Queries::Query;
 
 /*************************
 *
@@ -125,23 +125,6 @@ pub struct ResultCollection {
   pub results: Vec<Result>,
   pub query: Query,
 }
-pub struct ResultCollectionIterator {
-  results: ResultCollection,
-  curr_pos: usize,
-}
-impl Iterator for ResultCollectionIterator {
-  type Item = Result;
-  fn next(&mut self) -> Option<Self::Item> {
-    if self.curr_pos == self.results.results.len() {
-      return None
-    }
-    else {
-      let ret_val = Some(self.results.results[self.curr_pos].clone());
-      self.curr_pos += 1;
-      return ret_val
-    }
-  }
-} 
 impl<'a> IntoIterator for &'a ResultCollection {
   type Item = Result;
   type IntoIter = ResultCollectionRefIterator<'a>;

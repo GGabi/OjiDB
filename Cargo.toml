@@ -1,5 +1,5 @@
 [package]
-name = "OjiD"
+name = "OjiDB"
 version = "0.1.0"
 authors = ["gabrielroels <gabriel.roels@ibm.com>"]
 edition = "2018"

@@ -121,7 +121,7 @@ impl Query {
 }
 impl Query {
   pub fn from(vals: &[QueryUnit]) -> Self {
-    use Ordering::{S, P, O};
+    use Ordering::{S, P};
     match vals.len() {
       0 => Query::Null,
       1 => Self::make_single(vals[0].clone(), S),
@@ -132,7 +132,7 @@ impl Query {
     }
   }
   pub fn from_str(vals: &[&str]) -> Self {
-    use Ordering::{S, P, O};
+    use Ordering::{S, P};
     match vals.len() {
       0 => Query::Null,
       1 => Self::make_single(QueryUnit::from(vals[0]), S),
