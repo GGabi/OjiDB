@@ -1,119 +1,68 @@
 
+use std::collections::{HashMap, HashSet};
+
 type Triple = (String, String, String);
 type QueryTriple = (Option<String>, Option<String>, Option<String>);
 type QueryChain<'a>  = &'a[Option<String>];
 type Double = (String, String);
 type QueryDouble = (Option<String>, Option<String>);
 
-/*
-Trait to be implemented on Vec<T>.
-Forces re-allocation if and only if the
-length changes by a factor of 2, within
-a specified range.
-*/
-trait BinaryResize {
-  const MAX: usize;
-  const MIN: usize;
-  fn try_grow(&mut self);
-  fn try_shrink(&mut self);
-  fn grow(&mut self);
-  fn shrink(&mut self);
-}
-impl<T> BinaryResize for Vec<T> {
-  const MAX: usize = 64;
-  const MIN: usize = 8;
-  fn try_grow(&mut self) {
-    if self.capacity() < Self::MAX
-    && self.len() == self.capacity() {
-      self.grow();
-    }
-  }
-  fn try_shrink(&mut self) {
-    if self.capacity() > Self::MIN
-    && self.len() <= self.capacity()/2 {
-      self.shrink();
-    }
-  }
-  fn grow(&mut self) {
-    self.reserve_exact(self.capacity());
-  }
-  fn shrink(&mut self) {
-    self.shrink_to_fit();
-  }
-}
-
 /* TripleStore */
 #[derive(Clone, Debug, PartialEq)]
-pub struct TripleStore(pub Vec<(String, Box<Vec<(String, Box<Vec<String>>)>>)>);
+pub struct TripleStore(pub HashMap<String, Box<HashMap<String, Box<HashSet<String>>>>>);
 impl TripleStore {
   pub fn new() -> Self {
-    TripleStore(Vec::with_capacity(8))
+    TripleStore(HashMap::new())
   }
   pub fn add(&mut self, (h, m, t): Triple) {
     let heads = &mut self.0;
-    if let Some((_, mids)) = heads.iter_mut().find(|(val, _)| val == &h) {
-      if let Some((_, tails)) = mids.iter_mut().find(|(val, _)| val == &m) {
-        if let Some(_) = tails.iter().find(|val| val == &&t) {
+    if let Some(mids) = heads.get_mut(&h) {
+      if let Some(tails) = mids.get_mut(&m) {
+        if tails.contains(&t) {
           /* Triple already exists in TripleStore, don't add */
           return
         }
         else {
           /* Head and Mid exist in store, adding Tail */
-          tails.try_grow();
-          tails.push(t);
+          tails.insert(t);
         }
       }
       else {
         /* Head exists in store, adding Mid and Tail */
-        mids.try_grow();
-        let mut v = Vec::with_capacity(8);
-        v.push(t);
-        let tail = Box::new(v);
-        mids.push((m, tail));
+        mids.insert(m, Box::new([t].iter()
+                                   .cloned()
+                                   .collect()));
       }
     }
     else {
       /* Head, Mid and Tail do not exist in store, adding them all */
-      heads.try_grow();
-      let mut v = Vec::with_capacity(8);
-      v.push(t);
-      let tail = Box::new(v);
-      let mut v = Vec::with_capacity(8);
-      v.push((m, tail));
-      let mid = Box::new(v);
-      heads.push((h, mid));
+      heads.insert(h, Box::new([(m, Box::new([t].iter()
+                                                .cloned()
+                                                .collect()))
+                               ].iter()
+                                .cloned()
+                                .collect()));
     }
   }
   pub fn erase(&mut self, (h, m, t): &Triple) {
     let heads = &mut self.0;
-    /* Find the pos of the head in the store */
-    if let Some(head_pos) = heads.iter_mut()
-                                 .position(|(val, _)| val == h) {
-      let mids = &mut heads[head_pos].1;
-      /* Find the pos of the mid in the head */
-      if let Some(mid_pos) = mids.iter_mut()
-                                  .position(|(val, _)| val == m) {
-        let tails = &mut mids[mid_pos].1;
-        /* Find the pos of the tail in the mid */
-        if let Some(tail_pos) = tails.iter_mut()
-                                     .position(|val| val == t) {
+    if let Some(mids) = heads.get_mut(h) {
+      if let Some(tails) = mids.get_mut(m) {
+        if tails.contains(t) {
           /* If the triple is in the store, remove
                and shrink tail Vec if needed */
-          tails.remove(tail_pos);
-          tails.try_shrink();
+          tails.remove(t);
         }
         /* If the mid now contains no tails, remove
              and shrink mid Vec if needed */
         if tails.len() == 0 {
-          mids.remove(mid_pos);
-          mids.try_shrink();
+          mids.remove(m);
         }
       }
       /* If the head now contains no mids, remove
           and shrink head Vec if needed */
       if mids.len() == 0 {
-        heads.remove(head_pos);
-        heads.try_shrink();
+        heads.remove(h);        
       }
     }
   }
@@ -140,29 +89,32 @@ impl TripleStore {
     ret_v
   }
   pub fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
-    let heads = &self.0;
     let mut ret_v: Vec<Triple> = Vec::new();
+    let heads = &self.0;
     match qt {
       (Some(h), Some(m), Some(t)) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          if let Some((_, tails)) = mids.iter().find(|(val, _)| val == m) {
-            if let Some(_) = tails.iter().find(|val| val == &t) {
+        if heads.contains_key(h) {
+          let mids = &heads[h];
+          if mids.contains_key(m) {
+            if mids[m].contains(t) {
               ret_v.push((h.to_string(), m.to_string(), t.to_string()));
             }
           }
         }
       },
       (Some(h), Some(m), None) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
-          if let Some((_, tails)) = mids.iter().find(|(val, _)| val == m) {
-            for t in tails.iter() {
+        if heads.contains_key(h) {
+          let mids = &heads[h];
+          if mids.contains_key(m) {
+            for t in mids[m].iter() {
               ret_v.push((h.to_string(), m.to_string(), t.to_string()));
             }
           }
         }
       },
       (Some(h), None, None) => {
-        if let Some((_, mids)) = heads.iter().find(|(val, _)| val == h) {
+        if heads.contains_key(h) {
+          let mids = &heads[h];
           for (m, tails) in mids.iter() {
             for t in tails.iter() {
               ret_v.push((h.to_string(), m.to_string(), t.to_string()));
@@ -184,26 +136,26 @@ impl TripleStore {
     ret_v
   }
   pub fn get_double(&self, qd: &QueryDouble) -> Vec<Double> {
-    let heads = &self.0;
     let mut ret_v: Vec<Double> = Vec::new();
+    let heads = &self.0;
     match qd {
       (Some(h), Some(t)) => {
-        if let Some((_, tails)) = heads.iter().find(|(val, _)| val == h) {
-          if let Some(_) = tails.iter().find(|(val, _)| val == t) {
+        if heads.contains_key(h) {
+          if heads[h].contains_key(t) {
             ret_v.push((h.to_string(), t.to_string()));
           }
         }
       },
       (Some(h), None) => {
-        if let Some((_, tails)) = heads.iter().find(|(val, _)| val == h) {
-          for (t, _) in tails.iter() {
+        if heads.contains_key(h) {
+          for (t, _) in heads[h].iter() {
             ret_v.push((h.to_string(), t.to_string()));
           }
         }
       },
       (None, Some(t)) => {
         for (h, tails) in heads.iter() {
-          if let Some((t, _)) = tails.iter().find(|(val, _)| val == t) {
+          if tails.contains_key(t) {
             ret_v.push((h.to_string(), t.to_string()));
           }
         }
@@ -219,11 +171,11 @@ impl TripleStore {
     ret_v
   }
   pub fn get_single(&self, qs: &Option<String>) -> Vec<String> {
-    let heads = &self.0;
     let mut ret_v: Vec<String> = Vec::new();
+    let heads = &self.0;
     match qs {
       Some(h) => {
-        if let Some((_, _)) = heads.iter().find(|(val, _)| val == h) {
+        if heads.contains_key(h) {
           ret_v.push(h.to_string());
         }
       },
@@ -239,6 +191,18 @@ impl TripleStore {
     self.erase(old_t);
     self.add(new_t);
   }
+  pub fn iter(&self) -> TripleStoreRefIterator {
+    TripleStoreRefIterator {
+      store: &self,
+      head_iter: self.0.iter(),
+      mid_iter:  None,
+      tail_iter: None,
+      curr_head: None,
+      curr_mid:  None,
+      curr_tail: None,
+      is_fresh: true,
+    }
+  }
 }
 impl<'a> IntoIterator for &'a TripleStore {
   type Item = (String, String, String);
@@ -246,47 +210,86 @@ impl<'a> IntoIterator for &'a TripleStore {
   fn into_iter(self) -> Self::IntoIter {
     TripleStoreRefIterator {
       store: &self,
-      curr_head: 0,
-      curr_mid: 0,
-      curr_tail: 0,
+      head_iter: self.0.iter(),
+      mid_iter:  None,
+      tail_iter: None,
+      curr_head: None,
+      curr_mid:  None,
+      curr_tail: None,
+      is_fresh: true,
     }
   }
 }
 
 /* Iterator */
-#[derive(Clone, Debug, PartialEq)]
 pub struct TripleStoreRefIterator<'a> {
-  pub store: &'a TripleStore,
-  pub curr_head: usize,
-  pub curr_mid:  usize,
-  pub curr_tail: usize,
+  store: &'a TripleStore,
+  head_iter: std::collections::hash_map::Iter<'a, String, Box<HashMap<String, Box<HashSet<String>>>>>,
+  mid_iter:  Option<std::collections::hash_map::Iter<'a, String, Box<HashSet<String>>>>,
+  tail_iter: Option<std::collections::hash_set::Iter<'a, String>>,
+  curr_head: Option<(&'a String, &'a Box<HashMap<String, Box<HashSet<String>>>>)>,
+  curr_mid:  Option<(&'a String, &'a Box<HashSet<String>>)>,
+  curr_tail: Option<&'a String>,
+  is_fresh: bool, // Have we processed our first item yet?
 }
 impl<'a> Iterator for TripleStoreRefIterator<'a> {
   type Item = (String, String, String);
   fn next(&mut self) -> Option<Self::Item> {
 
-    if self.curr_head == self.store.0.len() {
+    /* Remove redundant code */
+    macro_rules! next {
+      ($x:ident) => {
+          match &mut self.$x {
+            Some(iter) => iter.next(),
+            None => None
+          };
+      };
+    }
+
+    /* self.curr_head will always be None on for a fresh iterator,
+         so make sure to differentiate fresh iterators from non-fresh ones */
+    if self.is_fresh {
+      self.is_fresh = false;
+      self.curr_head = self.head_iter.next();
+      if self.curr_head == None {
+        return None
+      }
+      self.mid_iter = Some(self.curr_head.unwrap().1.iter());
+      self.curr_mid = next!(mid_iter);
+      self.tail_iter = Some(self.curr_mid.unwrap().1.iter());
+      self.curr_tail = next!(tail_iter);
+    }
+    else if self.curr_head == None {
       return None
     }
 
-    let head = self.store.0[self.curr_head].0.to_string();
-    let mid = self.store.0[self.curr_head].1[self.curr_mid].0.to_string();
-    let tail = self.store.0[self.curr_head].1[self.curr_mid].1[self.curr_tail].to_string();
+    /* Grab the head, mid and tail from the current iterator
+         positions */
+    let head = self.curr_head.unwrap().0.clone();
+    let mid  = self.curr_mid.unwrap().0.clone();
+    let tail = self.curr_tail.unwrap().clone();
 
-    if self.curr_tail == self.store.0[self.curr_head].1[self.curr_mid].1.len()-1 {
-      if self.curr_mid == self.store.0[self.curr_head].1.len()-1 {
-          self.curr_head += 1;
-          self.curr_mid = 0;
-          self.curr_tail = 0;
+    /* Convince the 3 iterators to point to the strings that
+         correspond to the next logical triple in the store
+       If there is no next triple, return early */
+    self.curr_tail = next!(tail_iter);
+    if self.curr_tail == None {
+      self.curr_mid = next!(mid_iter);
+      if self.curr_mid == None {
+        self.curr_head = self.head_iter.next();
+        if self.curr_head == None {
+          return Some((head, mid, tail))
+        }
+        else {
+          self.mid_iter = Some(self.curr_head.unwrap().1.iter());
+          self.curr_mid = next!(mid_iter);
+        }
       }
-      else {
-        self.curr_mid += 1;
-        self.curr_tail = 0;
-      }
+      self.tail_iter = Some(self.curr_mid.unwrap().1.iter());
+      self.curr_tail = next!(tail_iter);
     }
-    else {
-      self.curr_tail += 1;
-    }
+
+    /* Return the next triple from the store */
     return Some((head, mid, tail))
   }
 } 
