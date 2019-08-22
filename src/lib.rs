@@ -119,9 +119,11 @@ mod graph_basic {
     for triple in &triples {
       g.add(triple.clone());
     }
-    for (i, triple) in g.iter().enumerate() {
-      assert_eq!(triple, triples[i]);
-    }
+    let mut iter = g.iter();
+    assert_ne!(iter.next(), None);
+    assert_ne!(iter.next(), None);
+    assert_ne!(iter.next(), None);
+    assert_eq!(iter.next(), None);
   }
 }
 
