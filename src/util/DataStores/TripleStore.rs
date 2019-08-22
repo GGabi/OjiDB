@@ -1,5 +1,5 @@
 
-use std::collections::{HashMap, HashSet};
+use hashbrown::{HashMap, HashSet};
 
 type Triple = (String, String, String);
 type QueryTriple = (Option<String>, Option<String>, Option<String>);
@@ -224,9 +224,9 @@ impl<'a> IntoIterator for &'a TripleStore {
 /* Iterator */
 pub struct TripleStoreRefIterator<'a> {
   store: &'a TripleStore,
-  head_iter: std::collections::hash_map::Iter<'a, String, Box<HashMap<String, Box<HashSet<String>>>>>,
-  mid_iter:  Option<std::collections::hash_map::Iter<'a, String, Box<HashSet<String>>>>,
-  tail_iter: Option<std::collections::hash_set::Iter<'a, String>>,
+  head_iter: hashbrown::hash_map::Iter<'a, String, Box<HashMap<String, Box<HashSet<String>>>>>,
+  mid_iter:  Option<hashbrown::hash_map::Iter<'a, String, Box<HashSet<String>>>>,
+  tail_iter: Option<hashbrown::hash_set::Iter<'a, String>>,
   curr_head: Option<(&'a String, &'a Box<HashMap<String, Box<HashSet<String>>>>)>,
   curr_mid:  Option<(&'a String, &'a Box<HashSet<String>>)>,
   curr_tail: Option<&'a String>,
