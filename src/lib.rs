@@ -112,16 +112,18 @@ mod graph_basic {
   }
   #[test]
   fn iterator() {
-    // let mut g = Graph::new();
-    // let triples = vec![(String::from("Gabe"), String::from("likes"), String::from("Rust")),
-    //                    (String::from("Gabe"), String::from("likes"), String::from("C++")),
-    //                    (String::from("Gabe"), String::from("is"), String::from("male"))];
-    // for triple in &triples {
-    //   g.add(triple.clone());
-    // }
-    // for (i, triple) in g.iter().enumerate() {
-    //   assert_eq!(triple, triples[i]);
-    // }
+    let mut g = Graph::new();
+    let triples = vec![(String::from("Gabe"), String::from("likes"), String::from("Rust")),
+                       (String::from("Gabe"), String::from("likes"), String::from("C++")),
+                       (String::from("Gabe"), String::from("is"), String::from("male"))];
+    for triple in &triples {
+      g.add(triple.clone());
+    }
+    let mut iter = g.iter();
+    assert_ne!(iter.next(), None);
+    assert_ne!(iter.next(), None);
+    assert_ne!(iter.next(), None);
+    assert_eq!(iter.next(), None);
   }
 }
 
