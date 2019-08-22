@@ -20,6 +20,7 @@ mod manual_tests {
     g.add(("Gabe".into(), "is".into(), "male".into()));
     g.add(("James".into(), "is".into(), "cool".into()));
     g.add(("Gabe".into(), "is".into(), "cool".into()));
+    g.add(("Harry".into(), "is not".into(), "cool".into()));
     let q = OjiQuery::new().from(&g)
                            .select(&["$name"])
                            .filter(&[("$name", "is", "cool")])
@@ -32,7 +33,6 @@ mod manual_tests {
 mod graph_basic {
 
   use super::*;
-  use super::util::TripleRefIter as TripleRefIter;
 
   #[test]
   fn create_graph() {
@@ -62,8 +62,19 @@ mod graph_basic {
     assert_ne!(g, empty_g);
   }
   #[test]
-  // fn insert_dupes_across_triplestores() {
-  // }
+  fn insert_dupes_across_triplestores() {
+    let mut g = Graph::new();
+    let s = String::from("Gabe");
+    let p = String::from("likes");
+    let o = String::from("Rust");
+    g.add((s.clone(), p.clone(), o.clone()));
+    let spo = g.spo.get_triple(&(Some(s.clone()), Some(p.clone()), Some(o.clone())));
+    let pos = g.pos.get_triple(&(Some(p.clone()), Some(o.clone()), Some(s.clone())));
+    let osp = g.osp.get_triple(&(Some(o.clone()), Some(s.clone()), Some(p.clone())));
+    assert_eq!(vec![(s.clone(), p.clone(), o.clone())], spo);
+    assert_eq!(vec![(p.clone(), o.clone(), s.clone())], pos);
+    assert_eq!(vec![(s.clone(), p.clone(), o.clone())], spo);
+  }
   #[test]
   fn insert_then_remove() {
     let mut g = Graph::new();
@@ -100,7 +111,17 @@ mod graph_basic {
     assert_eq!(g, expected_g);
   }
   #[test]
-  fn get_iterator() {
+  fn iterator() {
+    let mut g = Graph::new();
+    let triples = vec![(String::from("Gabe"), String::from("likes"), String::from("Rust")),
+                       (String::from("Gabe"), String::from("likes"), String::from("C++")),
+                       (String::from("Gabe"), String::from("is"), String::from("male"))];
+    for triple in &triples {
+      g.add(triple.clone());
+    }
+    for (i, triple) in g.iter().enumerate() {
+      assert_eq!(triple, triples[i]);
+    }
   }
 }
 
