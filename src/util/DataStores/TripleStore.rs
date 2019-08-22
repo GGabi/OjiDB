@@ -16,10 +16,8 @@ impl TripleStore {
   }
   pub fn add(&mut self, (h, m, t): Triple) {
     let heads = &mut self.0;
-    if heads.contains_key(&h) {
-      let mids = &mut heads[&h];
-      if mids.contains_key(&m) {
-        let tails = &mut mids[&m];
+    if let Some(mids) = heads.get_mut(&h) {
+      if let Some(tails) = mids.get_mut(&m) {
         if tails.contains(&t) {
           /* Triple already exists in TripleStore, don't add */
           return
@@ -48,10 +46,8 @@ impl TripleStore {
   }
   pub fn erase(&mut self, (h, m, t): &Triple) {
     let heads = &mut self.0;
-    if heads.contains_key(h) {
-      let mids = &mut heads[h];
-      if mids.contains_key(m) {
-        let tails = &mut mids[m];
+    if let Some(mids) = heads.get_mut(h) {
+      if let Some(tails) = mids.get_mut(m) {
         if tails.contains(t) {
           /* If the triple is in the store, remove
                and shrink tail Vec if needed */
@@ -195,6 +191,18 @@ impl TripleStore {
     self.erase(old_t);
     self.add(new_t);
   }
+  pub fn iter(&self) -> TripleStoreRefIterator {
+    TripleStoreRefIterator {
+      store: &self,
+      head_iter: self.0.iter(),
+      mid_iter:  None,
+      tail_iter: None,
+      curr_head: None,
+      curr_mid:  None,
+      curr_tail: None,
+      is_fresh: true,
+    }
+  }
 }
 impl<'a> IntoIterator for &'a TripleStore {
   type Item = (String, String, String);
@@ -216,7 +224,6 @@ impl<'a> IntoIterator for &'a TripleStore {
 /* Iterator */
 pub struct TripleStoreRefIterator<'a> {
   store: &'a TripleStore,
-  // head_iter: Box<dyn Iterator<Item = (String, Box<HashMap<String, Box<HashSet<String>>>>)>>,
   head_iter: std::collections::hash_map::Iter<'a, String, Box<HashMap<String, Box<HashSet<String>>>>>,
   mid_iter:  Option<std::collections::hash_map::Iter<'a, String, Box<HashSet<String>>>>,
   tail_iter: Option<std::collections::hash_set::Iter<'a, String>>,
@@ -229,6 +236,18 @@ impl<'a> Iterator for TripleStoreRefIterator<'a> {
   type Item = (String, String, String);
   fn next(&mut self) -> Option<Self::Item> {
 
+    /* Remove redundant code */
+    macro_rules! next {
+      ($x:ident) => {
+          match &mut self.$x {
+            Some(iter) => iter.next(),
+            None => None
+          };
+      };
+    }
+
+    /* self.curr_head will always be None on for a fresh iterator,
+         so make sure to differentiate fresh iterators from non-fresh ones */
     if self.is_fresh {
       self.is_fresh = false;
       self.curr_head = self.head_iter.next();
@@ -236,21 +255,26 @@ impl<'a> Iterator for TripleStoreRefIterator<'a> {
         return None
       }
       self.mid_iter = Some(self.curr_head.unwrap().1.iter());
-      self.curr_mid = self.mid_iter.unwrap().next();
+      self.curr_mid = next!(mid_iter);
       self.tail_iter = Some(self.curr_mid.unwrap().1.iter());
-      self.curr_tail = self.tail_iter.unwrap().next();
+      self.curr_tail = next!(tail_iter);
     }
     else if self.curr_head == None {
       return None
     }
 
+    /* Grab the head, mid and tail from the current iterator
+         positions */
     let head = self.curr_head.unwrap().0.clone();
     let mid  = self.curr_mid.unwrap().0.clone();
     let tail = self.curr_tail.unwrap().clone();
 
-    self.curr_tail = self.tail_iter.unwrap().next();
+    /* Convince the 3 iterators to point to the strings that
+         correspond to the next logical triple in the store
+       If there is no next triple, return early */
+    self.curr_tail = next!(tail_iter);
     if self.curr_tail == None {
-      self.curr_mid = self.mid_iter.unwrap().next();
+      self.curr_mid = next!(mid_iter);
       if self.curr_mid == None {
         self.curr_head = self.head_iter.next();
         if self.curr_head == None {
@@ -258,13 +282,14 @@ impl<'a> Iterator for TripleStoreRefIterator<'a> {
         }
         else {
           self.mid_iter = Some(self.curr_head.unwrap().1.iter());
-          self.curr_mid = self.mid_iter.unwrap().next();
+          self.curr_mid = next!(mid_iter);
         }
       }
       self.tail_iter = Some(self.curr_mid.unwrap().1.iter());
-      self.curr_tail = self.tail_iter.unwrap().next();
+      self.curr_tail = next!(tail_iter);
     }
 
+    /* Return the next triple from the store */
     return Some((head, mid, tail))
   }
 } 

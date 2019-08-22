@@ -47,12 +47,7 @@ impl Graph {
     self.add(new_t);
   }
   pub fn iter(&self) -> TripleStoreRefIterator {
-    TripleStoreRefIterator {
-      store: &self.spo,
-      curr_head: 0,
-      curr_mid: 0,
-      curr_tail: 0,
-    }
+    self.spo.iter()
   }
 }
 impl Graph {
