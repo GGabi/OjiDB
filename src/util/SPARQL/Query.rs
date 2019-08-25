@@ -41,18 +41,15 @@ impl<'a> Query<'a> {
     let mut q3: Option<String>;
     match &self.conds[0].0 {
       Val(a) => { q1 = Some(a.clone()); },
-      Var(_) => { q1 = None; },
-      Nil => { q1 = None; },
+      _      => { q1 = None; },
     };
     match &self.conds[0].1 {
       Val(b) => { q2 = Some(b.clone()); },
-      Var(_) => { q2 = None; },
-      Nil => { q2 = None; },
+      _      => { q2 = None; },
     };
     match &self.conds[0].2 {
       Val(b) => { q3 = Some(b.clone()); },
-      Var(_) => { q3 = None; },
-      Nil => { q3 = None; },
+      _      => { q3 = None; },
     };
     let query_res = self.graph.unwrap().get_triple(&(q1, q2, q3));
     if query_res.len() > 0 {
@@ -76,6 +73,84 @@ impl<'a> Query<'a> {
         rc.results.push(r);
       }
     }
+    rc
+  }
+}
+impl<'a> Query<'a> {
+  pub fn fetch_2(self) -> ResultCollection<'a> {
+    use QueryUnit::{Val, Var, Nil};
+    let mut rc = ResultCollection::new();
+    if let None = self.graph {
+      return rc
+    }
+    /* Actually start processing now */
+    /* Grab all the triples */
+    for query in &self.conds {
+      let q1 = match &query.0 {
+        Val(a) => Some(a.clone()),
+        _      => None,
+      };
+      let q2 = match &query.1 {
+        Val(b) => Some(b.clone()),
+        _      => None,
+      };
+      let q3 = match &query.2 {
+        Val(c) => Some(c.clone()),
+        _      => None,
+      };
+      let query_res = self.graph.unwrap().get_triple(&(q1, q2, q3));
+      if query_res.len() > 0 {
+        for i in 0..query_res.len() {
+          let mut r = Result::new();
+          match &query.0 {
+            Val(a) => { r.add_val(ResultUnit::Val(a.to_string())); },
+            Var(a) => { r.add_var(a.to_string(), query_res[i].0.clone()); },
+            Nil    => { r.add_val(ResultUnit::Nil); },
+          }
+          match &query.1 {
+            Val(b) => { r.add_val(ResultUnit::Val(b.to_string())); },
+            Var(b) => { r.add_var(b.to_string(), query_res[i].1.clone()); },
+            Nil    => { r.add_val(ResultUnit::Nil); },
+          }
+          match &query.2 {
+            Val(c) => { r.add_val(ResultUnit::Val(c.to_string())); },
+            Var(c) => { r.add_var(c.to_string(), query_res[i].2.clone()); },
+            Nil    => { r.add_val(ResultUnit::Nil); },
+          }
+          rc.results.push(r);
+        }
+      }
+    }
+    /* Filter the triples based on conditions for variables */
+    /* TODO: Provide support for the OR operator
+             when a user has multiple conditions.*/
+    /*
+      Gabe likes James
+      Gabe hates Kieran
+      James likes John
+
+      Query: $name1 likes $name2
+
+      valid_triples: [0, 0, 0]
+      current_var_vals: (x, y, z)
+      previous_var_vals: vec<[x, y, z]>
+
+      for each enumerated result:
+        if still considered valid:
+          
+
+      for each condition:
+        for each enumerated result:
+          if still considered valid:
+            try get_var with current condition's var names and insert into curr_var_vals
+            if all of these get_vars result in None then skip this triple (the get_triple didn't come from these variables)
+
+    */
+    let mut _valid_triples = vec![true; rc.results.len()];
+    let mut _curr_var_vals = [String::new(), String::new(), String::new()];
+    let mut _prev_var_vals: Vec<[String; 3]> = Vec::new();
+    print!("Yeet");
+    /* Return the final collection of results */
     rc
   }
 }

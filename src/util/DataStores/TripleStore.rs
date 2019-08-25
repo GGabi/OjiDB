@@ -193,7 +193,6 @@ impl TripleStore {
   }
   pub fn iter(&self) -> TripleStoreRefIterator {
     TripleStoreRefIterator {
-      store: &self,
       head_iter: self.0.iter(),
       mid_iter:  None,
       tail_iter: None,
@@ -209,7 +208,6 @@ impl<'a> IntoIterator for &'a TripleStore {
   type IntoIter = TripleStoreRefIterator<'a>;
   fn into_iter(self) -> Self::IntoIter {
     TripleStoreRefIterator {
-      store: &self,
       head_iter: self.0.iter(),
       mid_iter:  None,
       tail_iter: None,
@@ -223,7 +221,6 @@ impl<'a> IntoIterator for &'a TripleStore {
 
 /* Iterator */
 pub struct TripleStoreRefIterator<'a> {
-  store: &'a TripleStore,
   head_iter: hashbrown::hash_map::Iter<'a, String, Box<HashMap<String, Box<HashSet<String>>>>>,
   mid_iter:  Option<hashbrown::hash_map::Iter<'a, String, Box<HashSet<String>>>>,
   tail_iter: Option<hashbrown::hash_set::Iter<'a, String>>,
