@@ -220,6 +220,35 @@ impl<'a> IntoIterator for &'a TripleStore {
     }
   }
 }
+/* Shift implementation */
+impl TripleStore {
+  /*
+    Tail Shift: (h, m, t) -> (t, h, m)
+    Head Shift: (h, m, t) -> (m, t, h)
+    Flip:       (h, m, t) -> (t, m, h)
+  */
+  pub fn t_shift(self) -> TripleStore {
+    let mut new_store = TripleStore::new();
+    for (h, m, t) in self.iter() {
+      new_store.add((t, h, m));
+    }
+    new_store
+  }
+  pub fn h_shift(self) -> TripleStore {
+    let mut new_store = TripleStore::new();
+    for (h, m, t) in self.iter() {
+      new_store.add((m, t, h));
+    }
+    new_store
+  }
+  pub fn flip(self) -> TripleStore {
+    let mut new_store = TripleStore::new();
+    for (h, m, t) in self.iter() {
+      new_store.add((t, m, h));
+    }
+    new_store
+  }
+}
 
 /* Iterator */
 pub struct TripleStoreRefIterator<'a> {
