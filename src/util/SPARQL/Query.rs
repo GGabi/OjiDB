@@ -77,7 +77,7 @@ impl<'a> Query<'a> {
   }
 }
 impl<'a> Query<'a> {
-  pub fn fetch_2(self) -> ResultCollection<'a> {
+  fn fetch_2(self) -> ResultCollection<'a> {
     use QueryUnit::{Val, Var, Nil};
     let mut rc = ResultCollection::new();
     if let None = self.graph {
@@ -138,7 +138,6 @@ impl<'a> Query<'a> {
       for each enumerated result:
         if still considered valid:
           
-
       for each condition:
         for each enumerated result:
           if still considered valid:
