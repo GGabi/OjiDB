@@ -9,7 +9,7 @@ pub use SPARQL::Result::ResultUnit as OjiResultUnit;
 pub use SPARQL::Result::Result as OjiResult;
 pub use SPARQL::Result::ResultCollection as OjiResultCollection;
 pub use DataStores::Graph::Graph as Graph;
-pub use DataStores::TripleStore::TripleStoreRefIterator as TripleRefIter;
+pub use DataStores::TripleStore::TripleStoreIterator as TripleStoreIter;
 pub use DataStores::TripleStore::TripleStore as TripleStore;
 
 //Delcare common resources for nested modules

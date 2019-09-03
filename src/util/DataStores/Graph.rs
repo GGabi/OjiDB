@@ -1,6 +1,6 @@
 
 use super::{
-  TripleStore::{TripleStore, TripleStoreRefIterator},
+  TripleStore::{TripleStore, TripleStoreIterator},
   super::{
     Ordering
     // Results::{Result, ResultUnit, ResultCollection}
@@ -46,7 +46,7 @@ impl Graph {
     self.erase(&old_t);
     self.add(new_t);
   }
-  pub fn iter(&self) -> TripleStoreRefIterator {
+  pub fn iter(&self) -> TripleStoreIterator {
     self.spo.iter()
   }
 }

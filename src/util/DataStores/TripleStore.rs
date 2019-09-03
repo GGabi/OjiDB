@@ -191,8 +191,8 @@ impl TripleStore {
     self.erase(old_t);
     self.add(new_t);
   }
-  pub fn iter(&self) -> TripleStoreRefIterator {
-    TripleStoreRefIterator {
+  pub fn iter(&self) -> TripleStoreIterator {
+    TripleStoreIterator {
       head_iter: self.0.iter(),
       mid_iter:  None,
       tail_iter: None,
@@ -205,9 +205,9 @@ impl TripleStore {
 }
 impl<'a> IntoIterator for &'a TripleStore {
   type Item = (String, String, String);
-  type IntoIter = TripleStoreRefIterator<'a>;
+  type IntoIter = TripleStoreIterator<'a>;
   fn into_iter(self) -> Self::IntoIter {
-    TripleStoreRefIterator {
+    TripleStoreIterator {
       head_iter: self.0.iter(),
       mid_iter:  None,
       tail_iter: None,
@@ -218,9 +218,59 @@ impl<'a> IntoIterator for &'a TripleStore {
     }
   }
 }
+/* Shift implementation */
+impl TripleStore {
+  /*
+    Tail Shift: (h, m, t) -> (t, h, m)
+    Head Shift: (h, m, t) -> (m, t, h)
+    Flip:       (h, m, t) -> (t, m, h)
+  */
+  pub fn t_shift(self) -> TripleStore {
+    let mut new_store = TripleStore::new();
+    for (h, m, t) in self.iter() {
+      new_store.add((t, h, m));
+    }
+    new_store
+  }
+  pub fn h_shift(self) -> TripleStore {
+    let mut new_store = TripleStore::new();
+    for (h, m, t) in self.iter() {
+      new_store.add((m, t, h));
+    }
+    new_store
+  }
+  pub fn flip(self) -> TripleStore {
+    let mut new_store = TripleStore::new();
+    for (h, m, t) in self.iter() {
+      new_store.add((t, m, h));
+    }
+    new_store
+  }
+  pub fn t_shift_me(&mut self) {
+    let mut new_store = TripleStore::new();
+    for (h, m, t) in self.iter() {
+      new_store.add((t, h, m));
+    }
+    self.0 = new_store.0;
+  }
+  pub fn h_shift_me(&mut self) {
+    let mut new_store = TripleStore::new();
+    for (h, m, t) in self.iter() {
+      new_store.add((m, t, h));
+    }
+    self.0 = new_store.0;
+  }
+  pub fn flip_me(&mut self) {
+    let mut new_store = TripleStore::new();
+    for (h, m, t) in self.iter() {
+      new_store.add((t, m, h));
+    }
+    self.0 = new_store.0;
+  }
+}
 
 /* Iterator */
-pub struct TripleStoreRefIterator<'a> {
+pub struct TripleStoreIterator<'a> {
   head_iter: hashbrown::hash_map::Iter<'a, String, Box<HashMap<String, Box<HashSet<String>>>>>,
   mid_iter:  Option<hashbrown::hash_map::Iter<'a, String, Box<HashSet<String>>>>,
   tail_iter: Option<hashbrown::hash_set::Iter<'a, String>>,
@@ -229,7 +279,7 @@ pub struct TripleStoreRefIterator<'a> {
   curr_tail: Option<&'a String>,
   is_fresh: bool, // Have we processed our first item yet?
 }
-impl<'a> Iterator for TripleStoreRefIterator<'a> {
+impl<'a> Iterator for TripleStoreIterator<'a> {
   type Item = (String, String, String);
   fn next(&mut self) -> Option<Self::Item> {
 
