@@ -1,6 +1,6 @@
 
 use super::{
-  TripleStore::{TripleStore, TripleStoreRefIterator},
+  TripleStore::{TripleStore, TripleStoreIterator},
   super::{
     Ordering
     // Results::{Result, ResultUnit, ResultCollection}
@@ -46,8 +46,22 @@ impl Graph {
     self.erase(&old_t);
     self.add(new_t);
   }
-  pub fn iter(&self) -> TripleStoreRefIterator {
+  pub fn iter(&self) -> TripleStoreIterator {
     self.spo.iter()
+  }
+  pub fn json(&self) -> String {
+    serde_json::to_string(&self.spo).unwrap()
+  }
+  pub fn into_json(self) -> String {
+    serde_json::to_string(&self.spo).unwrap()
+  }
+  pub fn from_json(json: String) -> Self {
+    let triple_store: TripleStore = serde_json::from_str(&json).unwrap();
+    Graph {
+      spo: triple_store.clone(),
+      pos: triple_store.clone().h_shift(),
+      osp: triple_store.t_shift(),
+    }
   }
 }
 impl Graph {

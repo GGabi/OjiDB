@@ -179,3 +179,23 @@ mod result_create {
     assert_eq!(r.get_var("name"), Some(String::from("Gabe")));
   }
 }
+
+#[cfg(test)]
+mod serde {
+  use super::*;
+  #[test]
+  fn into_json() {
+    let mut t = TripleStore::new();
+    t.add(("Gabe".into(), "likes".into(), "Rust".into()));
+    let json = t.json();
+    let expected_json = String::from("{\"Gabe\":{\"likes\":[\"Rust\"]}}");
+    assert_eq!(json, expected_json);
+  }
+  #[test]
+  fn from_json() {
+    let mut t = TripleStore::from_json("{\"Gabe\":{\"likes\":[\"Rust\"]}}".into());
+    let mut expected_t = TripleStore::new();
+    expected_t.add(("Gabe".into(), "likes".into(), "Rust".into()));
+    assert_eq!(t, expected_t);
+  }
+}
