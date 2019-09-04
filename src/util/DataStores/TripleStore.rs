@@ -1,5 +1,6 @@
 
-use hashbrown::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
+use serde::{Serialize, Deserialize};
 
 type Triple = (String, String, String);
 type QueryTriple = (Option<String>, Option<String>, Option<String>);
@@ -8,7 +9,7 @@ type Double = (String, String);
 type QueryDouble = (Option<String>, Option<String>);
 
 /* TripleStore */
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TripleStore(pub HashMap<String, Box<HashMap<String, Box<HashSet<String>>>>>);
 impl TripleStore {
   pub fn new() -> Self {
@@ -191,9 +192,8 @@ impl TripleStore {
     self.erase(old_t);
     self.add(new_t);
   }
-  pub fn iter(&self) -> TripleStoreRefIterator {
-    TripleStoreRefIterator {
-      store: &self,
+  pub fn iter(&self) -> TripleStoreIterator {
+    TripleStoreIterator {
       head_iter: self.0.iter(),
       mid_iter:  None,
       tail_iter: None,
@@ -203,13 +203,21 @@ impl TripleStore {
       is_fresh: true,
     }
   }
+  pub fn json(&self) -> String {
+    serde_json::to_string(self).unwrap()
+  }
+  pub fn into_json(self) -> String {
+    serde_json::to_string(&self).unwrap()
+  }
+  pub fn from_json(json: String) -> Self {
+    serde_json::from_str(&json).unwrap()
+  }
 }
 impl<'a> IntoIterator for &'a TripleStore {
   type Item = (String, String, String);
-  type IntoIter = TripleStoreRefIterator<'a>;
+  type IntoIter = TripleStoreIterator<'a>;
   fn into_iter(self) -> Self::IntoIter {
-    TripleStoreRefIterator {
-      store: &self,
+    TripleStoreIterator {
       head_iter: self.0.iter(),
       mid_iter:  None,
       tail_iter: None,
@@ -272,17 +280,16 @@ impl TripleStore {
 }
 
 /* Iterator */
-pub struct TripleStoreRefIterator<'a> {
-  store: &'a TripleStore,
-  head_iter: hashbrown::hash_map::Iter<'a, String, Box<HashMap<String, Box<HashSet<String>>>>>,
-  mid_iter:  Option<hashbrown::hash_map::Iter<'a, String, Box<HashSet<String>>>>,
-  tail_iter: Option<hashbrown::hash_set::Iter<'a, String>>,
+pub struct TripleStoreIterator<'a> {
+  head_iter: std::collections::hash_map::Iter<'a, String, Box<HashMap<String, Box<HashSet<String>>>>>,
+  mid_iter:  Option<std::collections::hash_map::Iter<'a, String, Box<HashSet<String>>>>,
+  tail_iter: Option<std::collections::hash_set::Iter<'a, String>>,
   curr_head: Option<(&'a String, &'a Box<HashMap<String, Box<HashSet<String>>>>)>,
   curr_mid:  Option<(&'a String, &'a Box<HashSet<String>>)>,
   curr_tail: Option<&'a String>,
   is_fresh: bool, // Have we processed our first item yet?
 }
-impl<'a> Iterator for TripleStoreRefIterator<'a> {
+impl<'a> Iterator for TripleStoreIterator<'a> {
   type Item = (String, String, String);
   fn next(&mut self) -> Option<Self::Item> {
 
