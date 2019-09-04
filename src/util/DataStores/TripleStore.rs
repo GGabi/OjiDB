@@ -1,11 +1,11 @@
 
 use hashbrown::{HashMap, HashSet};
 
+type Double = (String, String);
+type QueryDouble = (Option<String>, Option<String>);
 type Triple = (String, String, String);
 type QueryTriple = (Option<String>, Option<String>, Option<String>);
 type QueryChain<'a>  = &'a[Option<String>];
-type Double = (String, String);
-type QueryDouble = (Option<String>, Option<String>);
 
 /* TripleStore */
 #[derive(Clone, Debug, PartialEq)]
