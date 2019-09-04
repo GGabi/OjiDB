@@ -49,20 +49,6 @@ impl Graph {
   pub fn iter(&self) -> TripleStoreIterator {
     self.spo.iter()
   }
-  pub fn json(&self) -> String {
-    serde_json::to_string(&self.spo).unwrap()
-  }
-  pub fn into_json(self) -> String {
-    serde_json::to_string(&self.spo).unwrap()
-  }
-  pub fn from_json(json: String) -> Self {
-    let triple_store: TripleStore = serde_json::from_str(&json).unwrap();
-    Graph {
-      spo: triple_store.clone(),
-      pos: triple_store.clone().h_shift(),
-      osp: triple_store.t_shift(),
-    }
-  }
 }
 impl Graph {
   pub fn get_triple(&self, qt: &QueryTriple) -> Vec<Triple> {
@@ -336,6 +322,46 @@ impl Graph {
   //   };
   //   rc
   // }
+}
+/* Json Interface */
+impl Graph {
+  pub fn json(&self) -> String {
+    serde_json::to_string(&self.spo).unwrap()
+  }
+  pub fn into_json(self) -> String {
+    serde_json::to_string(&self.spo).unwrap()
+  }
+  pub fn from_json(data: String) -> Self {
+    let triple_store: TripleStore = serde_json::from_str(&data).unwrap();
+    Graph {
+      spo: triple_store.clone(),
+      pos: triple_store.clone().h_shift(),
+      osp: triple_store.t_shift(),
+    }
+  }
+  pub fn add_json(&mut self, data: String) -> Result<(), &'static str> {
+    let ts_attempt: Result<TripleStore, serde_json::error::Error> = serde_json::from_str(&data);
+    match ts_attempt {
+      Ok(triple_store) => {
+        for triple in triple_store.iter() {
+          self.add(triple);
+        }
+        Ok(())
+      },
+      _ => {
+        let vec_attempt: Result<Vec<Triple>, serde_json::error::Error> = serde_json::from_str(&data);
+        match vec_attempt {
+          Ok(triples) => {
+            for triple in triples {
+              self.add(triple);
+            }
+            Ok(())
+          },
+          _ => Err("Invalid JSON format, please provide either the same format as .json()'s return type or a flat list of triples.")
+        }
+      },
+    }
+  }
 }
 
 fn t_order(t: Triple, curr_ordering: &Ordering) -> Triple {
