@@ -73,7 +73,7 @@ mod graph_basic {
     let osp = g.osp.get_triple(&(Some(o.clone()), Some(s.clone()), Some(p.clone())));
     assert_eq!(vec![(s.clone(), p.clone(), o.clone())], spo);
     assert_eq!(vec![(p.clone(), o.clone(), s.clone())], pos);
-    assert_eq!(vec![(s.clone(), p.clone(), o.clone())], spo);
+    assert_eq!(vec![(o, s, p)], osp);
   }
   #[test]
   fn insert_then_remove() {
@@ -193,9 +193,20 @@ mod serde {
   }
   #[test]
   fn from_json() {
-    let mut t = TripleStore::from_json("{\"Gabe\":{\"likes\":[\"Rust\"]}}".into());
+    let t = TripleStore::from_json("{\"Gabe\":{\"likes\":[\"Rust\"]}}".into()).unwrap();
     let mut expected_t = TripleStore::new();
     expected_t.insert(("Gabe".into(), "likes".into(), "Rust".into()));
     assert_eq!(t, expected_t);
+  }
+  #[test]
+  fn insert_json() {
+    let t = "{\"Gabe\":{\"likes\":[\"Rust\"]}}";
+    let mut t_store = TripleStore::new();
+    let expected_t_store = TripleStore::from(vec![(String::from("Gabe"),
+                                                   String::from("likes"),
+                                                   String::from("Rust"))]);
+    #[allow(unused_must_use)]
+    t_store.insert_json::<TripleStore>(t);
+    assert_eq!(t_store, expected_t_store);
   }
 }

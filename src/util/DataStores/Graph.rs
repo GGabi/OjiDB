@@ -1,6 +1,6 @@
 
 use super::{
-  TripleStore::{TripleStore, TripleStoreIterator},
+  TripleStore::{TripleStore, TripleStoreRefIterator},
   super::{
     Ordering
   }
@@ -28,6 +28,14 @@ impl Graph {
       osp: TripleStore::new()
     }
   }
+  pub fn from<T>(triples: T) -> Self
+    where T: Iterator<Item=Triple> {
+    let mut g = Self::new();
+    for triple in triples {
+      g.insert(triple);
+    }
+    g
+  }
   pub fn insert(&mut self, (s, p, o): Triple) {
     /* Add should eventually consume the input */
     self.spo.insert((s.to_string(), p.to_string(), o.to_string()));
@@ -43,7 +51,7 @@ impl Graph {
     self.remove(&old_t);
     self.insert(new_t);
   }
-  pub fn iter(&self) -> TripleStoreIterator {
+  pub fn iter(&self) -> TripleStoreRefIterator {
     self.spo.iter()
   }
 }
@@ -336,20 +344,20 @@ impl Graph {
       osp: triple_store.t_shift(),
     })
   }
-  pub fn add_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
+  pub fn insert_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
     where T: serde::Deserialize<'a>
            + Iterator<Item=Triple> {
-    let parsed_data: T = serde_json::from_str(&data)?;
-    for triple in parsed_data {
+    let triples: T = serde_json::from_str(&data)?;
+    for triple in triples {
       self.insert(triple);
     };
     Ok(())
   }
-  pub fn erase_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
+  pub fn remove_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
     where T: serde::Deserialize<'a>
            + Iterator<Item=Triple> {
-    let parsed_data: T = serde_json::from_str(&data)?;
-    for triple in parsed_data {
+    let triples: T = serde_json::from_str(&data)?;
+    for triple in triples {
       self.remove(&triple);
     }
     Ok(())
