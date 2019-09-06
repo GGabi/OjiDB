@@ -15,7 +15,7 @@ impl TripleStore {
   pub fn new() -> Self {
     TripleStore(HashMap::new())
   }
-  pub fn add(&mut self, (h, m, t): Triple) {
+  pub fn insert(&mut self, (h, m, t): Triple) {
     let heads = &mut self.0;
     if let Some(mids) = heads.get_mut(&h) {
       if let Some(tails) = mids.get_mut(&m) {
@@ -45,7 +45,7 @@ impl TripleStore {
                                 .collect()));
     }
   }
-  pub fn erase(&mut self, (h, m, t): &Triple) {
+  pub fn remove(&mut self, (h, m, t): &Triple) {
     let heads = &mut self.0;
     if let Some(mids) = heads.get_mut(h) {
       if let Some(tails) = mids.get_mut(m) {
@@ -189,8 +189,8 @@ impl TripleStore {
     ret_v
   }
   pub fn replace(&mut self, old_t: &Triple, new_t: Triple) {
-    self.erase(old_t);
-    self.add(new_t);
+    self.remove(old_t);
+    self.insert(new_t);
   }
   pub fn iter(&self) -> TripleStoreIterator {
     TripleStoreIterator {
@@ -238,42 +238,42 @@ impl TripleStore {
   pub fn t_shift(self) -> TripleStore {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((t, h, m));
+      new_store.insert((t, h, m));
     }
     new_store
   }
   pub fn h_shift(self) -> TripleStore {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((m, t, h));
+      new_store.insert((m, t, h));
     }
     new_store
   }
   pub fn flip(self) -> TripleStore {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((t, m, h));
+      new_store.insert((t, m, h));
     }
     new_store
   }
   pub fn t_shift_me(&mut self) {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((t, h, m));
+      new_store.insert((t, h, m));
     }
     self.0 = new_store.0;
   }
   pub fn h_shift_me(&mut self) {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((m, t, h));
+      new_store.insert((m, t, h));
     }
     self.0 = new_store.0;
   }
   pub fn flip_me(&mut self) {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((t, m, h));
+      new_store.insert((t, m, h));
     }
     self.0 = new_store.0;
   }

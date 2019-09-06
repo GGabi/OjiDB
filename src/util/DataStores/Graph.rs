@@ -28,20 +28,20 @@ impl Graph {
       osp: TripleStore::new()
     }
   }
-  pub fn add(&mut self, (s, p, o): Triple) {
+  pub fn insert(&mut self, (s, p, o): Triple) {
     /* Add should eventually consume the input */
-    self.spo.add((s.to_string(), p.to_string(), o.to_string()));
-    self.pos.add((p.to_string(), o.to_string(), s.to_string()));
-    self.osp.add((o, s, p));
+    self.spo.insert((s.to_string(), p.to_string(), o.to_string()));
+    self.pos.insert((p.to_string(), o.to_string(), s.to_string()));
+    self.osp.insert((o, s, p));
   }
-  pub fn erase(&mut self, (s, p, o): &Triple) {
-    self.spo.erase(&(s.to_string(), p.to_string(), o.to_string()));
-    self.pos.erase(&(p.to_string(), o.to_string(), s.to_string()));
-    self.osp.erase(&(o.to_string(), s.to_string(), p.to_string()));
+  pub fn remove(&mut self, (s, p, o): &Triple) {
+    self.spo.remove(&(s.to_string(), p.to_string(), o.to_string()));
+    self.pos.remove(&(p.to_string(), o.to_string(), s.to_string()));
+    self.osp.remove(&(o.to_string(), s.to_string(), p.to_string()));
   }
   pub fn replace(&mut self, old_t: &Triple, new_t: Triple) {
-    self.erase(&old_t);
-    self.add(new_t);
+    self.remove(&old_t);
+    self.insert(new_t);
   }
   pub fn iter(&self) -> TripleStoreIterator {
     self.spo.iter()
@@ -341,7 +341,7 @@ impl Graph {
            + Iterator<Item=Triple> {
     let parsed_data: T = serde_json::from_str(&data)?;
     for triple in parsed_data {
-      self.add(triple);
+      self.insert(triple);
     };
     Ok(())
   }
@@ -350,7 +350,7 @@ impl Graph {
            + Iterator<Item=Triple> {
     let parsed_data: T = serde_json::from_str(&data)?;
     for triple in parsed_data {
-      self.erase(&triple);
+      self.remove(&triple);
     }
     Ok(())
   }

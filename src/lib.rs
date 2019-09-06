@@ -17,10 +17,10 @@ mod manual_tests {
   #[test]
   fn gabe() {
     let mut g = Graph::new();
-    g.add(("Gabe".into(), "is".into(), "male".into()));
-    g.add(("James".into(), "is".into(), "cool".into()));
-    g.add(("Gabe".into(), "is".into(), "cool".into()));
-    g.add(("Harry".into(), "is not".into(), "cool".into()));
+    g.insert(("Gabe".into(), "is".into(), "male".into()));
+    g.insert(("James".into(), "is".into(), "cool".into()));
+    g.insert(("Gabe".into(), "is".into(), "cool".into()));
+    g.insert(("Harry".into(), "is not".into(), "cool".into()));
     let q = OjiQuery::new().from(&g)
                            .select(&["$name"])
                            .filter(&[("$name", "is", "cool")])
@@ -47,13 +47,13 @@ mod graph_basic {
   #[test]
   fn insert_triples() {
     let mut g = Graph::new();
-    g.add(("Gabe".into(), "likes".into(), "Rust".into()));
-    g.add(("Gabe".into(), "likes".into(), "C++".into()));
-    g.add(("Gabe".into(), "likes".into(), "Scala".into()));
-    g.add(("Matt".into(), "likes".into(), "JS".into()));
-    g.add(("James".into(), "likes".into(), "Java".into()));
-    g.add(("James".into(), "likes".into(), "C#".into()));
-    g.add(("Gabe".into(), "likes".into(), "James".into()));
+    g.insert(("Gabe".into(), "likes".into(), "Rust".into()));
+    g.insert(("Gabe".into(), "likes".into(), "C++".into()));
+    g.insert(("Gabe".into(), "likes".into(), "Scala".into()));
+    g.insert(("Matt".into(), "likes".into(), "JS".into()));
+    g.insert(("James".into(), "likes".into(), "Java".into()));
+    g.insert(("James".into(), "likes".into(), "C#".into()));
+    g.insert(("Gabe".into(), "likes".into(), "James".into()));
     let empty_g = Graph {
       spo: TripleStore::new(),
       pos: TripleStore::new(),
@@ -67,7 +67,7 @@ mod graph_basic {
     let s = String::from("Gabe");
     let p = String::from("likes");
     let o = String::from("Rust");
-    g.add((s.clone(), p.clone(), o.clone()));
+    g.insert((s.clone(), p.clone(), o.clone()));
     let spo = g.spo.get_triple(&(Some(s.clone()), Some(p.clone()), Some(o.clone())));
     let pos = g.pos.get_triple(&(Some(p.clone()), Some(o.clone()), Some(s.clone())));
     let osp = g.osp.get_triple(&(Some(o.clone()), Some(s.clone()), Some(p.clone())));
@@ -79,8 +79,8 @@ mod graph_basic {
   fn insert_then_remove() {
     let mut g = Graph::new();
     let t = ("Gabe".into(), "likes".into(), "Rust".into());
-    g.add(t.clone());
-    g.erase(&t);
+    g.insert(t.clone());
+    g.remove(&t);
     let empty_g = Graph {
       spo: TripleStore::new(),
       pos: TripleStore::new(),
@@ -91,12 +91,12 @@ mod graph_basic {
   #[test]
   fn remove_the_correct_triple() {
     let mut g = Graph::new();
-    g.add(("Gabe".into(), "is".into(), "male".into()));
+    g.insert(("Gabe".into(), "is".into(), "male".into()));
     let t = ("Gabe".into(), "likes".into(), "Rust".into());
-    g.add(t.clone());
-    g.erase(&t);
+    g.insert(t.clone());
+    g.remove(&t);
     let mut expected_g = Graph::new();
-    expected_g.add(("Gabe".into(), "is".into(), "male".into()));
+    expected_g.insert(("Gabe".into(), "is".into(), "male".into()));
     assert_eq!(g, expected_g);
   }
   #[test]
@@ -104,10 +104,10 @@ mod graph_basic {
     let mut g = Graph::new();
     let old_t = ("Gabe".into(), "is".into(), "male".into());
     let new_t = ("Gabe".into(), "likes".into(), "Rust".into());
-    g.add(old_t.clone());
+    g.insert(old_t.clone());
     g.replace(&old_t, new_t.clone());
     let mut expected_g = Graph::new();
-    expected_g.add(new_t.clone());
+    expected_g.insert(new_t.clone());
     assert_eq!(g, expected_g);
   }
   #[test]
@@ -117,7 +117,7 @@ mod graph_basic {
                        (String::from("Gabe"), String::from("likes"), String::from("C++")),
                        (String::from("Gabe"), String::from("is"), String::from("male"))];
     for triple in &triples {
-      g.add(triple.clone());
+      g.insert(triple.clone());
     }
     let mut iter = g.iter();
     assert_ne!(iter.next(), None);
@@ -186,7 +186,7 @@ mod serde {
   #[test]
   fn into_json() {
     let mut t = TripleStore::new();
-    t.add(("Gabe".into(), "likes".into(), "Rust".into()));
+    t.insert(("Gabe".into(), "likes".into(), "Rust".into()));
     let json = t.json();
     let expected_json = String::from("{\"Gabe\":{\"likes\":[\"Rust\"]}}");
     assert_eq!(json, expected_json);
@@ -195,7 +195,7 @@ mod serde {
   fn from_json() {
     let mut t = TripleStore::from_json("{\"Gabe\":{\"likes\":[\"Rust\"]}}".into());
     let mut expected_t = TripleStore::new();
-    expected_t.add(("Gabe".into(), "likes".into(), "Rust".into()));
+    expected_t.insert(("Gabe".into(), "likes".into(), "Rust".into()));
     assert_eq!(t, expected_t);
   }
 }
