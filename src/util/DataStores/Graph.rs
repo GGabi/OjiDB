@@ -3,14 +3,11 @@ use super::{
   TripleStore::{TripleStore, TripleStoreIterator},
   super::{
     Ordering
-    // Results::{Result, ResultUnit, ResultCollection}
   }
 };
 
 type Triple = (String, String, String);
 type QueryTriple = (Option<String>, Option<String>, Option<String>);
-// type Double = (String, String);
-// type QueryDouble = (Option<String>, Option<String>);
 
 /*
 A data-structure that sacrifices space for fast data access
@@ -331,36 +328,31 @@ impl Graph {
   pub fn into_json(self) -> String {
     serde_json::to_string(&self.spo).unwrap()
   }
-  pub fn from_json(data: String) -> Self {
-    let triple_store: TripleStore = serde_json::from_str(&data).unwrap();
-    Graph {
+  pub fn from_json(data: String) -> Result<Self, serde_json::error::Error> {
+    let triple_store: TripleStore = serde_json::from_str(&data)?;
+    Ok(Graph {
       spo: triple_store.clone(),
       pos: triple_store.clone().h_shift(),
       osp: triple_store.t_shift(),
-    }
+    })
   }
-  pub fn add_json(&mut self, data: String) -> Result<(), &'static str> {
-    let ts_attempt: Result<TripleStore, serde_json::error::Error> = serde_json::from_str(&data);
-    match ts_attempt {
-      Ok(triple_store) => {
-        for triple in triple_store.iter() {
-          self.add(triple);
-        }
-        Ok(())
-      },
-      _ => {
-        let vec_attempt: Result<Vec<Triple>, serde_json::error::Error> = serde_json::from_str(&data);
-        match vec_attempt {
-          Ok(triples) => {
-            for triple in triples {
-              self.add(triple);
-            }
-            Ok(())
-          },
-          _ => Err("Invalid JSON format, please provide either the same format as .json()'s return type or a flat list of triples.")
-        }
-      },
+  pub fn add_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
+    where T: serde::Deserialize<'a>
+           + Iterator<Item=Triple> {
+    let parsed_data: T = serde_json::from_str(&data)?;
+    for triple in parsed_data {
+      self.add(triple);
+    };
+    Ok(())
+  }
+  pub fn erase_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
+    where T: serde::Deserialize<'a>
+           + Iterator<Item=Triple> {
+    let parsed_data: T = serde_json::from_str(&data)?;
+    for triple in parsed_data {
+      self.erase(&triple);
     }
+    Ok(())
   }
 }
 
