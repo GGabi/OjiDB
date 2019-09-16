@@ -466,4 +466,4 @@ impl<'a> Iterator for TripleStoreRefIterator<'a> {
     /* Return the next triple from the store */
     return Some((head, mid, tail))
   }
-} 
+}

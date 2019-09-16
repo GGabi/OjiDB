@@ -1,6 +1,6 @@
 
 use super::{
-  TripleStore::{TripleStore, TripleStoreRefIterator},
+  TripleStore::{TripleStore, TripleStoreIterator, TripleStoreRefIterator},
   super::{
     Ordering
   }
@@ -361,6 +361,42 @@ impl Graph {
       self.remove(&triple);
     }
     Ok(())
+  }
+}
+impl IntoIterator for Graph {
+  type Item = (String, String, String);
+  type IntoIter = GraphIterator;
+  fn into_iter(self) -> Self::IntoIter {
+    GraphIterator {
+      triple_store_iter: self.spo.into_iter(),
+    }
+  }
+}
+pub struct GraphIterator {
+  triple_store_iter: TripleStoreIterator,
+}
+impl Iterator for GraphIterator {
+  type Item = (String, String, String);
+  fn next(&mut self) -> Option<Self::Item> {
+    self.triple_store_iter.next()
+  }
+}
+impl<'a> IntoIterator for &'a Graph {
+  type Item = (String, String, String);
+  type IntoIter = GraphRefIterator<'a>;
+  fn into_iter(self) -> Self::IntoIter {
+    GraphRefIterator {
+      triple_store_iter: self.spo.iter(),
+    }
+  }
+}
+pub struct GraphRefIterator<'a> {
+  triple_store_iter: TripleStoreRefIterator<'a>,
+}
+impl<'a> Iterator for GraphRefIterator<'a> {
+  type Item = (String, String, String);
+  fn next(&mut self) -> Option<Self::Item> {
+    self.triple_store_iter.next()
   }
 }
 
