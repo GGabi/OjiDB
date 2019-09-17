@@ -219,8 +219,8 @@ impl TripleStore {
   pub fn into_json(self) -> String {
     serde_json::to_string(&self).unwrap()
   }
-  pub fn from_json(data: String) -> Result<Self, serde_json::error::Error> {
-    serde_json::from_str(&data)
+  pub fn from_json(data: &str) -> Result<Self, serde_json::error::Error> {
+    serde_json::from_str(data)
   }
   pub fn insert_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
     where T: serde::Deserialize<'a>

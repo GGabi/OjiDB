@@ -336,8 +336,8 @@ impl Graph {
   pub fn into_json(self) -> String {
     serde_json::to_string(&self.spo).unwrap()
   }
-  pub fn from_json(data: String) -> Result<Self, serde_json::error::Error> {
-    let triple_store: TripleStore = serde_json::from_str(&data)?;
+  pub fn from_json(data: &str) -> Result<Self, serde_json::error::Error> {
+    let triple_store: TripleStore = serde_json::from_str(data)?;
     Ok(Graph {
       spo: triple_store.clone(),
       pos: triple_store.clone().h_shift(),
