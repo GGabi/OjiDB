@@ -19,11 +19,17 @@ Oji, pronounced "Oh-Jee", is (or will be) a Graph Database implemented in Rust, 
  - **Tristore**: A fully implemented, and *slightly modified*, Hexastore architecture to provide lightning-fast data retrieval and a foundation for flexible queries.
  - **POINTERS**: All "branches" in the database exist separately on the heap rather than existing within one object, meaning modification of one part of the data will never cause more than the local branch to be re-allocated.
  - **O(1) Lookup**: Store everything in HashMaps and HashSets.
- - **Readable Documents!**: Optional import/export from/to JSON using the `.json()`, `.into_json()` and `.from_json(data: String)` methods on both Graph and TripleStore. Graph's methods will take and produce TripleStore JSON documents while handling all the multi-store stuff for you.
+ - **Readable Documents!**: Optional import/export from/to JSON using the following methods on both Graph and TripleStore:
+  - - `.json()`
+  - - `.into_json()`
+  - - `.from_json(data: &str)`
+  - - `.insert_json(data: &str)`
+  - - `.remove_json(data: &str)`
+  `insert_json()`+`remove_json()` will accept any json format that Serde can deserialise to a structure that implements the `IntoIterator<Item=(String, String, String)>` trait.
+  Graph's methods will take and produce TripleStore JSON documents while handling all the multi-store stuff for you.
 
 ### What we don't have: (yet)
  - **Fancy Interactions**: Structs and types that allow for more sophisticated interactions with Oji.
- - **Query Chains**: Support for queries of arbitrary length.
  - **Faster Documents!**: A persistence model using Amazon ION. 
    - Using C and Rust's FFI.
  - **Embracing Standards**: Support for SPARQL-esque queries.
