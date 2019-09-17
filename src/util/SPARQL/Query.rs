@@ -36,9 +36,9 @@ impl<'a> Query<'a> {
       return rc
     }
     /* Actually start processing now */
-    let mut q1: Option<String>;
-    let mut q2: Option<String>;
-    let mut q3: Option<String>;
+    let q1: Option<String>;
+    let q2: Option<String>;
+    let q3: Option<String>;
     match &self.conds[0].0 {
       Val(a) => { q1 = Some(a.clone()); },
       Var(_) => { q1 = None; },

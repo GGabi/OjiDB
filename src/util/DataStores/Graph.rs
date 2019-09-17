@@ -1,16 +1,13 @@
 
 use super::{
-  TripleStore::{TripleStore, TripleStoreIterator},
+  TripleStore::{TripleStore, TripleStoreIterator, TripleStoreRefIterator},
   super::{
     Ordering
-    // Results::{Result, ResultUnit, ResultCollection}
   }
 };
 
 type Triple = (String, String, String);
 type QueryTriple = (Option<String>, Option<String>, Option<String>);
-// type Double = (String, String);
-// type QueryDouble = (Option<String>, Option<String>);
 
 /*
 A data-structure that sacrifices space for fast data access
@@ -31,37 +28,31 @@ impl Graph {
       osp: TripleStore::new()
     }
   }
-  pub fn add(&mut self, (s, p, o): Triple) {
-    /* Add should eventually consume the input */
-    self.spo.add((s.to_string(), p.to_string(), o.to_string()));
-    self.pos.add((p.to_string(), o.to_string(), s.to_string()));
-    self.osp.add((o, s, p));
+  pub fn from<T>(triples: T) -> Self
+    where T: Iterator<Item=Triple> {
+    let mut g = Self::new();
+    for triple in triples {
+      g.insert(triple);
+    }
+    g
   }
-  pub fn erase(&mut self, (s, p, o): &Triple) {
-    self.spo.erase(&(s.to_string(), p.to_string(), o.to_string()));
-    self.pos.erase(&(p.to_string(), o.to_string(), s.to_string()));
-    self.osp.erase(&(o.to_string(), s.to_string(), p.to_string()));
+  pub fn insert(&mut self, (s, p, o): Triple) {
+    /* Add should eventually consume the input */
+    self.spo.insert((s.to_string(), p.to_string(), o.to_string()));
+    self.pos.insert((p.to_string(), o.to_string(), s.to_string()));
+    self.osp.insert((o, s, p));
+  }
+  pub fn remove(&mut self, (s, p, o): &Triple) {
+    self.spo.remove(&(s.to_string(), p.to_string(), o.to_string()));
+    self.pos.remove(&(p.to_string(), o.to_string(), s.to_string()));
+    self.osp.remove(&(o.to_string(), s.to_string(), p.to_string()));
   }
   pub fn replace(&mut self, old_t: &Triple, new_t: Triple) {
-    self.erase(&old_t);
-    self.add(new_t);
+    self.remove(&old_t);
+    self.insert(new_t);
   }
-  pub fn iter(&self) -> TripleStoreIterator {
+  pub fn iter(&self) -> TripleStoreRefIterator {
     self.spo.iter()
-  }
-  pub fn json(&self) -> String {
-    serde_json::to_string(&self.spo).unwrap()
-  }
-  pub fn into_json(self) -> String {
-    serde_json::to_string(&self.spo).unwrap()
-  }
-  pub fn from_json(json: String) -> Self {
-    let triple_store: TripleStore = serde_json::from_str(&json).unwrap();
-    Graph {
-      spo: triple_store.clone(),
-      pos: triple_store.clone().h_shift(),
-      osp: triple_store.t_shift(),
-    }
   }
 }
 impl Graph {
@@ -336,6 +327,77 @@ impl Graph {
   //   };
   //   rc
   // }
+}
+/* Json Interface */
+impl Graph {
+  pub fn json(&self) -> String {
+    serde_json::to_string(&self.spo).unwrap()
+  }
+  pub fn into_json(self) -> String {
+    serde_json::to_string(&self.spo).unwrap()
+  }
+  pub fn from_json(data: &str) -> Result<Self, serde_json::error::Error> {
+    let triple_store: TripleStore = serde_json::from_str(data)?;
+    Ok(Graph {
+      spo: triple_store.clone(),
+      pos: triple_store.clone().h_shift(),
+      osp: triple_store.t_shift(),
+    })
+  }
+  pub fn insert_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
+    where T: serde::Deserialize<'a>
+           + Iterator<Item=Triple> {
+    let triples: T = serde_json::from_str(&data)?;
+    for triple in triples {
+      self.insert(triple);
+    };
+    Ok(())
+  }
+  pub fn remove_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
+    where T: serde::Deserialize<'a>
+           + Iterator<Item=Triple> {
+    let triples: T = serde_json::from_str(&data)?;
+    for triple in triples {
+      self.remove(&triple);
+    }
+    Ok(())
+  }
+}
+impl IntoIterator for Graph {
+  type Item = (String, String, String);
+  type IntoIter = GraphIterator;
+  fn into_iter(self) -> Self::IntoIter {
+    GraphIterator {
+      triple_store_iter: self.spo.into_iter(),
+    }
+  }
+}
+pub struct GraphIterator {
+  triple_store_iter: TripleStoreIterator,
+}
+impl Iterator for GraphIterator {
+  type Item = (String, String, String);
+  fn next(&mut self) -> Option<Self::Item> {
+    self.triple_store_iter.next()
+  }
+}
+impl<'a> IntoIterator for &'a Graph {
+  type Item = (String, String, String);
+  type IntoIter = GraphRefIterator<'a>;
+  fn into_iter(self) -> Self::IntoIter {
+    GraphRefIterator {
+      triple_store_iter: self.spo.iter(),
+    }
+  }
+}
+pub struct GraphRefIterator<'a> {
+  triple_store_iter: TripleStoreRefIterator<'a>,
+}
+impl<'a> Iterator for GraphRefIterator<'a> {
+  type Item = (String, String, String);
+  fn next(&mut self) -> Option<Self::Item> {
+    self.triple_store_iter.next()
+  }
 }
 
 fn t_order(t: Triple, curr_ordering: &Ordering) -> Triple {

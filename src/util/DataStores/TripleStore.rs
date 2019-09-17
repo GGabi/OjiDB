@@ -15,7 +15,14 @@ impl TripleStore {
   pub fn new() -> Self {
     TripleStore(HashMap::new())
   }
-  pub fn add(&mut self, (h, m, t): Triple) {
+  pub fn from(triples: Vec<Triple>) -> Self {
+    let mut t_store = Self::new();
+    for triple in triples {
+      t_store.insert(triple);
+    }
+    t_store
+  }
+  pub fn insert(&mut self, (h, m, t): Triple) {
     let heads = &mut self.0;
     if let Some(mids) = heads.get_mut(&h) {
       if let Some(tails) = mids.get_mut(&m) {
@@ -45,7 +52,7 @@ impl TripleStore {
                                 .collect()));
     }
   }
-  pub fn erase(&mut self, (h, m, t): &Triple) {
+  pub fn remove(&mut self, (h, m, t): &Triple) {
     let heads = &mut self.0;
     if let Some(mids) = heads.get_mut(h) {
       if let Some(tails) = mids.get_mut(m) {
@@ -189,11 +196,11 @@ impl TripleStore {
     ret_v
   }
   pub fn replace(&mut self, old_t: &Triple, new_t: Triple) {
-    self.erase(old_t);
-    self.add(new_t);
+    self.remove(old_t);
+    self.insert(new_t);
   }
-  pub fn iter(&self) -> TripleStoreIterator {
-    TripleStoreIterator {
+  pub fn iter(&self) -> TripleStoreRefIterator {
+    TripleStoreRefIterator {
       head_iter: self.0.iter(),
       mid_iter:  None,
       tail_iter: None,
@@ -203,29 +210,35 @@ impl TripleStore {
       is_fresh: true,
     }
   }
+}
+/* Json Interface */
+impl TripleStore {
   pub fn json(&self) -> String {
     serde_json::to_string(self).unwrap()
   }
   pub fn into_json(self) -> String {
     serde_json::to_string(&self).unwrap()
   }
-  pub fn from_json(json: String) -> Self {
-    serde_json::from_str(&json).unwrap()
+  pub fn from_json(data: &str) -> Result<Self, serde_json::error::Error> {
+    serde_json::from_str(data)
   }
-}
-impl<'a> IntoIterator for &'a TripleStore {
-  type Item = (String, String, String);
-  type IntoIter = TripleStoreIterator<'a>;
-  fn into_iter(self) -> Self::IntoIter {
-    TripleStoreIterator {
-      head_iter: self.0.iter(),
-      mid_iter:  None,
-      tail_iter: None,
-      curr_head: None,
-      curr_mid:  None,
-      curr_tail: None,
-      is_fresh: true,
+  pub fn insert_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
+    where T: serde::Deserialize<'a>
+           + IntoIterator<Item=Triple> {
+    let triples: T = serde_json::from_str(&data)?;
+    for triple in triples {
+      self.insert(triple);
     }
+    Ok(())
+  }
+  pub fn remove_json<'a, T>(&mut self, data: &'a str) -> Result<(), serde_json::error::Error>
+    where T: serde::Deserialize<'a>
+           + IntoIterator<Item=Triple> {
+    let triples: T = serde_json::from_str(&data)?;
+    for triple in triples {
+      self.remove(&triple);
+    }
+    Ok(())
   }
 }
 /* Shift implementation */
@@ -238,49 +251,153 @@ impl TripleStore {
   pub fn t_shift(self) -> TripleStore {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((t, h, m));
+      new_store.insert((t, h, m));
     }
     new_store
   }
   pub fn h_shift(self) -> TripleStore {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((m, t, h));
+      new_store.insert((m, t, h));
     }
     new_store
   }
   pub fn flip(self) -> TripleStore {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((t, m, h));
+      new_store.insert((t, m, h));
     }
     new_store
   }
   pub fn t_shift_me(&mut self) {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((t, h, m));
+      new_store.insert((t, h, m));
     }
     self.0 = new_store.0;
   }
   pub fn h_shift_me(&mut self) {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((m, t, h));
+      new_store.insert((m, t, h));
     }
     self.0 = new_store.0;
   }
   pub fn flip_me(&mut self) {
     let mut new_store = TripleStore::new();
     for (h, m, t) in self.iter() {
-      new_store.add((t, m, h));
+      new_store.insert((t, m, h));
     }
     self.0 = new_store.0;
   }
 }
+/* Iterators */
+impl IntoIterator for TripleStore {
+  type Item = (String, String, String);
+  type IntoIter = TripleStoreIterator;
+  fn into_iter(self) -> Self::IntoIter {
+    TripleStoreIterator {
+      head_iter: Some(self.0.into_iter()),
+      mid_iter:  None,
+      tail_iter: None,
+      curr_head: None,
+      curr_mid:  None,
+      curr_tail: None,
+      is_fresh: true,
+    }
+  }
+}
+pub struct TripleStoreIterator {
+  head_iter: Option<std::collections::hash_map::IntoIter<String, Box<HashMap<String, Box<HashSet<String>>>>>>,
+  mid_iter:  Option<std::collections::hash_map::IntoIter<String, Box<HashSet<String>>>>,
+  tail_iter: Option<std::collections::hash_set::IntoIter<String>>,
+  curr_head: Option<(String, Box<HashMap<String, Box<HashSet<String>>>>)>,
+  curr_mid:  Option<(String, Box<HashSet<String>>)>,
+  curr_tail: Option<String>,
+  is_fresh: bool, // Have we processed our first item yet?
+}
+impl<'a> Iterator for TripleStoreIterator {
+  type Item = (String, String, String);
+  fn next(&mut self) -> Option<Self::Item> {
 
-/* Iterator */
-pub struct TripleStoreIterator<'a> {
+    /* Remove redundant code */
+    macro_rules! next {
+      ($x:ident) => {
+          match &mut self.$x {
+            Some(iter) => {
+              match iter.next() {
+                Some(a) => Some(a.clone()),
+                None => None,
+              }
+            },
+            None => None
+          };
+      };
+    }
+
+    /* self.curr_head will always be None on for a fresh iterator,
+         so make sure to differentiate fresh iterators from non-fresh ones */
+    if self.is_fresh {
+      self.is_fresh = false;
+      self.curr_head = next!(head_iter);
+      if self.curr_head == None {
+        return None
+      }
+      self.mid_iter = Some(self.curr_head.as_ref().unwrap().clone().1.into_iter());
+      self.curr_mid = next!(mid_iter);
+      self.tail_iter = Some(self.curr_mid.as_ref().unwrap().clone().1.into_iter());
+      self.curr_tail = next!(tail_iter);
+    }
+    else if self.curr_head == None {
+      return None
+    }
+
+    /* Grab the head, mid and tail from the current iterator
+         positions */
+    let head = self.curr_head.as_ref().unwrap().0.clone();
+    let mid  = self.curr_mid.as_ref().unwrap().0.clone();
+    let tail = self.curr_tail.as_ref().unwrap().clone();
+
+    /* Convince the 3 iterators to point to the strings that
+         correspond to the next logical triple in the store
+       If there is no next triple, return early */
+    self.curr_tail = next!(tail_iter);
+    if self.curr_tail == None {
+      self.curr_mid = next!(mid_iter);
+      if self.curr_mid == None {
+        self.curr_head = next!(head_iter);
+        if self.curr_head == None {
+          return Some((head, mid, tail))
+        }
+        else {
+          self.mid_iter = Some(self.curr_head.as_ref().unwrap().clone().1.into_iter());
+          self.curr_mid = next!(mid_iter);
+        }
+      }
+      self.tail_iter = Some(self.curr_mid.as_ref().unwrap().clone().1.into_iter());
+      self.curr_tail = next!(tail_iter);
+    }
+
+    /* Return the next triple from the store */
+    return Some((head, mid, tail))
+  }
+} 
+impl<'a> IntoIterator for &'a TripleStore {
+  type Item = (String, String, String);
+  type IntoIter = TripleStoreRefIterator<'a>;
+  fn into_iter(self) -> Self::IntoIter {
+    TripleStoreRefIterator {
+      head_iter: self.0.iter(),
+      mid_iter:  None,
+      tail_iter: None,
+      curr_head: None,
+      curr_mid:  None,
+      curr_tail: None,
+      is_fresh: true,
+    }
+  }
+}
+pub struct TripleStoreRefIterator<'a> {
   head_iter: std::collections::hash_map::Iter<'a, String, Box<HashMap<String, Box<HashSet<String>>>>>,
   mid_iter:  Option<std::collections::hash_map::Iter<'a, String, Box<HashSet<String>>>>,
   tail_iter: Option<std::collections::hash_set::Iter<'a, String>>,
@@ -289,7 +406,7 @@ pub struct TripleStoreIterator<'a> {
   curr_tail: Option<&'a String>,
   is_fresh: bool, // Have we processed our first item yet?
 }
-impl<'a> Iterator for TripleStoreIterator<'a> {
+impl<'a> Iterator for TripleStoreRefIterator<'a> {
   type Item = (String, String, String);
   fn next(&mut self) -> Option<Self::Item> {
 
@@ -349,4 +466,4 @@ impl<'a> Iterator for TripleStoreIterator<'a> {
     /* Return the next triple from the store */
     return Some((head, mid, tail))
   }
-} 
+}
