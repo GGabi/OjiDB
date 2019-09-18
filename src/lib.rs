@@ -23,7 +23,7 @@ mod manual_tests {
     g.add(("Harry".into(), "is not".into(), "cool".into()));
     let q = OjiQuery::new().from(&g)
                            .select(&["$name"])
-                           .filter(&[("$name", "is", "cool")])
+                           .filter(&[["$name", "is", "cool"]])
                            .fetch();
     println!("{:#?}", q);
   }
@@ -73,7 +73,7 @@ mod graph_basic {
     let osp = g.osp.get_triple(&(Some(o.clone()), Some(s.clone()), Some(p.clone())));
     assert_eq!(vec![(s.clone(), p.clone(), o.clone())], spo);
     assert_eq!(vec![(p.clone(), o.clone(), s.clone())], pos);
-    assert_eq!(vec![(s.clone(), p.clone(), o.clone())], spo);
+    assert_eq!(vec![(o.clone(), s.clone(), p.clone())], osp);
   }
   #[test]
   fn insert_then_remove() {
